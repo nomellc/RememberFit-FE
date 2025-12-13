@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {colors} from '../theme/color';
 
 // DB 함수 가져오기
-import {createDeck, db} from '../database/deckOperations';
+import {createDeck, getDecks} from '../database/deckOperations';
 
-export default function DeckScreen() {
+export default function DeckScreen({navigation}) {
     const [text, setText] = useState(''); // 입력창의 글자 상태
     const [decks, setDecks] = useState([]); // 화면에 보여줄 덱 리스트
 
@@ -51,9 +51,14 @@ export default function DeckScreen() {
             data={decks}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({item}) => (
-                <View style={styles.deckItem}>
+                <TouchableOpacity
+                style={styles.deckItem}
+                onPress={() => navigation.navigate('CardList', {
+                    deckId: item.id,
+                    deckTitle: item.title
+                })}>
                     <Text style={styles.deckTitle}>{item.title}</Text>
-                </View>
+                </TouchableOpacity>
             )}
             />
         </View>

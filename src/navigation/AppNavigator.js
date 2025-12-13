@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
+import DeckStackNavigator from "./DeckStackNavigator";
 
 import HomeScreen from "../screens/HomeScreen";
 import DeckScreen from "../screens/DeckScreen";
@@ -24,8 +25,8 @@ export default function AppNavigator() {
                 />
                 <Tab.Screen 
                 name="Deck"
-                component={DeckScreen}
-                options={{title: '덱'}}
+                component={DeckStackNavigator}
+                options={{title: '덱', headerShown: false}}
                 />
                 <Tab.Screen 
                 name="Stats"
