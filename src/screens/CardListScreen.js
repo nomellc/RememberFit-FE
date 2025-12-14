@@ -23,6 +23,18 @@ export default function CardListScreen({route, navigation}) {
         setCards(data);
     };
 
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <TouchableOpacity onPress={() => navigation.navigate('Study')}>
+                    <Text style={{color: colors.primary, fontWeight: 'bold', marginRight: 10}}>
+                    학습 시작
+                    </Text>
+                </TouchableOpacity>
+            ),
+        });
+    }, [navigation]);
+
     return (
         <View style={styles.container}>
             <FlatList
