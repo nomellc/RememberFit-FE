@@ -27,3 +27,16 @@ export const addCard = async (deckId, front, back) => {
         throw error;
     }
 };
+
+// 3. 학습용 카드 가져오기
+export const getCardsForStudy = async (deckId) => {
+    try {
+        const cards = await db.getAllAsync(
+            'SELECT * FROM cards WHERE deck_id = ?', [deckId]
+        );
+        return cards;
+    } catch(error) {
+        console.error('학습 카드 로딩 실패: ', error);
+        return [];
+    }
+};

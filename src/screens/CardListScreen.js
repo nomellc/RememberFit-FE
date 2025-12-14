@@ -26,14 +26,14 @@ export default function CardListScreen({route, navigation}) {
     React.useLayoutEffect(() => {
         navigation.setOptions({
             headerRight: () => (
-                <TouchableOpacity onPress={() => navigation.navigate('Study')}>
+                <TouchableOpacity onPress={() => navigation.navigate('Study', {deckId: deckId})}>
                     <Text style={{color: colors.primary, fontWeight: 'bold', marginRight: 10}}>
                     학습 시작
                     </Text>
                 </TouchableOpacity>
             ),
         });
-    }, [navigation]);
+    }, [navigation, deckId]);
 
     return (
         <View style={styles.container}>
