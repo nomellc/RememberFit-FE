@@ -2,6 +2,9 @@ import React, {useState, useRef, useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableWithoutFeedback, Dimensions, Animated, TouchableOpacity} from 'react-native';
 import {colors} from '../theme/color';
 import { getCardsForStudy } from '../database/cardOperations';
+import { updateCardStatus } from '../database/studyOperations';
+import { calculateSM2 } from '../utils/sm2';
+import {format, addDays} from 'date-fns';
 
 export default function StudyScreen({route, navigation}) {
     const {deckId} = route.params; // 덱 목록에서 넘겨준 ID
@@ -48,14 +51,32 @@ export default function StudyScreen({route, navigation}) {
     };
 
     // 3. 난이도 버튼 눌렀을 때 (다음 카드로 이동)
-    const handleRate = (difficulty) => {
+    const handleRate = async (quality) => {
+        const currentCard = cards[currentIndex];
+
+        // 알고리즘 계산
+        // DB에서 가져온 값이 없으면 기본값(0, 0, 25) 사용
+        const {interval, repetition, ef} = calculateSM2(
+            quality,
+            currentCard.interval || 0,
+            currentCard.repetition || 0,
+            currentCard.ease_factor || 2.5
+        );
+
+        // 다음 복습 날짜 계산 (오늘 + interval일)
+        const nextDate = format(addDays(new Date(), interval), 'yyyy-mm-dd');
+
+        // DB 업데이트 (비동기 처리)
+        await updateCardStatus(currentCard.id, interval, repetition, ef, nextDate);
+
+        // 애니메이션 및 다음 카드로 이동 (기존 코드 유지)
         Animated.timing(animatedValue, {toValue: 0, duration: 0, useNativeDriver: true}).start();
         setIsFlipped(false);
 
         if (currentIndex < cards.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
-            alert('오늘의 학습 끝! 👏');
+            alert('오늘의 학습 끝! 수고하셨습니다 👏');
             navigation.goBack();
         }
     };

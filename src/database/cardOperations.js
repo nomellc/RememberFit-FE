@@ -31,9 +31,13 @@ export const addCard = async (deckId, front, back) => {
 // 3. 학습용 카드 가져오기
 export const getCardsForStudy = async (deckId) => {
     try {
-        const cards = await db.getAllAsync(
-            'SELECT * FROM cards WHERE deck_id = ?', [deckId]
-        );
+        // COALESCE(..., 0): NULL일 경우 기본값을 0이나 2.5로 채워주는 함수
+        const query = `
+        SELECT c.*, COALESCE(s.interval, 0) as interval, COALESCE(s.repetition, 0) as repetition, COALESCE(s.ease_factor, 2.5) as ease_factor
+        FROM cards c
+        LEFT JOIN study_logs s ON c.id = s.card_id
+        WHERE c.deck_id = ?`;
+        const cards = await db.getAllAsync(query, [deckId]);
         return cards;
     } catch(error) {
         console.error('학습 카드 로딩 실패: ', error);
