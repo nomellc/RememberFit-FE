@@ -36,19 +36,22 @@ export const getHomeStats = async () => {
 };
 
 export const getRecentDecks = async () => {
-    try {
-        const query = `
-        SELECT d.id, d.title, COUNT(c.id) as count
-        FROM decks d
-        LEFT JOIN cards c ON d.id = c.deck_id
-        GROUP BY d.id
-        ORDER BY d.id DESC
-        LIMIT 3`;
-
-        const decks = await db.getAllAsync(query);
-        return decks;
-    } catch(error) {
-        console.error('최근 덱 로딩 실패: ', error);
-        return [];
-    }
+  try {
+    // 덱 정보(d.*)와 그 덱에 속한 카드 수(count)를 가져옵니다.
+    // ORDER BY d.id DESC LIMIT 3: 가장 최근에 만든 덱 3개만 가져옴
+    const query = `
+      SELECT d.id, d.title, COUNT(c.id) as count
+      FROM decks d
+      LEFT JOIN cards c ON d.id = c.deck_id
+      GROUP BY d.id
+      ORDER BY d.id DESC
+      LIMIT 3
+    `;
+    
+    const decks = await db.getAllAsync(query);
+    return decks;
+  } catch (error) {
+    console.error('최근 덱 로딩 실패:', error);
+    return [];
+  }
 };

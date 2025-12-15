@@ -3,34 +3,26 @@ import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/color';
-import { getHomeStats } from '../database/homeOperations';
-
-// 데미 데이터
-const STATUS_DATA = [
-    {label: 'New', count: 12, color: colors.primary},
-    {label: 'Review', count: 5, color: colors.danger},
-    {label: 'Learning', count: 8, color: colors.success},
-];
-
-const RECENT_DECKS = [
-    {id: 1, title: 'JLPT', count: 5},
-    {id: 2, title: '정보처리기사 실기', count: 3},
-];
+import { getHomeStats, getRecentDecks } from '../database/homeOperations';
 
 export default function HomeScreen({navigation}) {
   // 상태 관리
   const [stats, setStats] = useState({review: 0, new: 0, done: 0});
+  const [recentDecks, setRecentDecks] = useState([]);
 
   // 화면이 포커스될 때마다 실행(새로고침)
   useFocusEffect(
     useCallback(() => {
-      loadStats();
+      loadData();
     }, [])
   );
 
-  const loadStats = async () => {
-    const data = await getHomeStats();
-    setStats(data);
+  const loadData = async () => {
+    const statData = await getHomeStats();
+    setStats(statData);
+
+    const deckData = await getRecentDecks();
+    setRecentDecks(deckData);
   };
 
     return (
@@ -70,8 +62,15 @@ export default function HomeScreen({navigation}) {
             <Text style={styles.sectionTitle}>최근 학습한 덱</Text>
         </View>
 
-        {RECENT_DECKS.map((deck) => (
-            <TouchableOpacity key={deck.id} style={styles.deckRow}>
+        {recentDecks.length === 0 && (
+          <Text style={{color: '#999', marginTop: 10}}>아직 생성된 덱이 없습니다.</Text>
+        )}
+
+        {recentDecks.map((deck) => (
+            <TouchableOpacity key={deck.id} style={styles.deckRow} onPress={() => navigation.navigate('Decks', {
+              screen: 'CardList',
+              params: {deckId: deck.id, deckTitle: deck.title}
+            })}>
                 <View style={styles.deckInfo}>
                     <Text style={styles.deckTitle}>{deck.title}</Text>
                     <Text style={styles.deckCount}>잔여: {deck.count}장</Text>
