@@ -48,3 +48,16 @@ export const getCardsForStudy = async (deckId) => {
         return [];
     }
 };
+
+// 4. 카드 삭제하기
+export const deleteCard = async (id) => {
+  try {
+    // 학습 기록(study_logs) 먼저 삭제
+    await db.runAsync('DELETE FROM study_logs WHERE card_id = ?', [id]);
+    // 카드 본체 삭제
+    await db.runAsync('DELETE FROM cards WHERE id = ?', [id]);
+    console.log(`카드 ID ${id} 삭제 완료`);
+  } catch (error) {
+    console.error('카드 삭제 실패:', error);
+  }
+};

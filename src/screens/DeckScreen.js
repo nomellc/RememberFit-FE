@@ -1,84 +1,100 @@
-import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, Button, TextInput, FlatList, TouchableOpacity} from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Button, TextInput, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {colors} from '../theme/color';
+import { useFocusEffect } from '@react-navigation/native';
+import { colors } from '../theme/color';
 
-// DB 함수 가져오기
-import {createDeck, getDecks} from '../database/deckOperations';
+// deleteDeck 추가됨
+import { createDeck, getDecks, deleteDeck } from '../database/deckOperations';
 
-export default function DeckScreen({navigation}) {
-    const [text, setText] = useState(''); // 입력창의 글자 상태
-    const [decks, setDecks] = useState([]); // 화면에 보여줄 덱 리스트
+export default function DeckScreen({ navigation }) {
+    const [text, setText] = useState('');
+    const [decks, setDecks] = useState([]);
 
-    // 화면 처음 켜질 때 덱 목록 불러오기
-    useEffect(() =>{
-        loadDecks();
-    }, []);
+    // 화면이 포커스될 때마다 목록 새로고침
+    useFocusEffect(
+        useCallback(() => {
+            loadDecks();
+        }, [])
+    );
 
-    // DB에서 목록 불러오기 함수
     const loadDecks = async () => {
         const data = await getDecks();
         setDecks(data);
     };
 
-    // 추가 버튼 눌렀을 때 실행할 함수
     const handleAddDeck = async () => {
-        if (text.trim() === '') return; // 빈칸이면 무시
-
+        if (text.trim() === '') return;
         try {
-            await createDeck(text); // 덱 생성
-            setText(''); // 입력창 초기화
-            loadDecks(); // 목록 새로고침
+            await createDeck(text);
+            setText('');
+            loadDecks();
         } catch (error) {
             console.log('덱 추가 실패:', error);
         }
     };
 
-    return (
-         <SafeAreaView style={styles.container}>
-        <View style={styles.container}>
-            <View style={styles.inputContainer}>
-                <TextInput 
-                style={styles.input}
-                placeholder="새 덱 이름"
-                value={text}
-                onChangeText={setText}
-                />
-                <Button title="추가" onPress={handleAddDeck}/>
-            </View>
+    // [추가됨] 덱 삭제 핸들러
+    const handleDelete = (id) => {
+        Alert.alert(
+            "덱 삭제",
+            "정말 삭제하시겠습니까?\n이 덱에 포함된 모든 카드도 함께 삭제됩니다.",
+            [
+                { text: "취소", style: "cancel" },
+                { 
+                    text: "삭제", 
+                    style: "destructive", 
+                    onPress: async () => {
+                        await deleteDeck(id); // DB에서 삭제
+                        loadDecks(); // 목록 새로고침
+                    }
+                }
+            ]
+        );
+    };
 
-            <FlatList
-            data={decks}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({item}) => (
-                <TouchableOpacity
-                style={styles.deckItem}
-                onPress={() => navigation.navigate('CardList', {
-                    deckId: item.id,
-                    deckTitle: item.title
-                })}>
-                    <Text style={styles.deckTitle}>{item.title}</Text>
-                </TouchableOpacity>
-            )}
-            />
-        </View>
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                <View style={styles.inputContainer}>
+                    <TextInput 
+                        style={styles.input}
+                        placeholder="새 덱 이름"
+                        value={text}
+                        onChangeText={setText}
+                    />
+                    <Button title="추가" onPress={handleAddDeck}/>
+                </View>
+
+                <FlatList
+                    data={decks}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({item}) => (
+                        <TouchableOpacity
+                            style={styles.deckItem}
+                            // 짧게 누르면: 카드 목록 이동
+                            onPress={() => navigation.navigate('CardList', {
+                                deckId: item.id,
+                                deckTitle: item.title
+                            })}
+                            // [추가됨] 길게 누르면: 삭제 알림창
+                            onLongPress={() => handleDelete(item.id)}
+                            delayLongPress={500} // 0.5초 누르면 실행
+                        >
+                            <Text style={styles.deckTitle}>{item.title}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: colors.background },
-  inputContainer: { 
-    flexDirection: 'row', marginBottom: 20, alignItems: 'center' 
-  },
-  input: {
-    flex: 1, borderWidth: 1, borderColor: '#ccc', 
-    padding: 10, marginRight: 10, borderRadius: 5, backgroundColor: 'white'
-  },
-  deckItem: {
-    padding: 20, backgroundColor: 'white', 
-    marginBottom: 10, borderRadius: 10,
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3
-  },
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, padding: 20 },
+  inputContainer: { flexDirection: 'row', marginBottom: 20, alignItems: 'center' },
+  input: { flex: 1, borderWidth: 1, borderColor: '#ccc', padding: 10, marginRight: 10, borderRadius: 5, backgroundColor: 'white' },
+  deckItem: { padding: 20, backgroundColor: 'white', marginBottom: 10, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
   deckTitle: { fontSize: 18, fontWeight: 'bold' }
 });

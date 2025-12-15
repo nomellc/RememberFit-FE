@@ -29,3 +29,16 @@ export const getDecks = async () => {
         return [];
     }
 };
+
+// 3. 덱 삭제하기 (Cascade Delete)
+export const deleteDeck = async (id) => {
+  try {
+    // 1. 해당 덱의 카드들 먼저 삭제 (외래키 제약조건 방지 및 깔끔한 정리)
+    await db.runAsync('DELETE FROM cards WHERE deck_id = ?', [id]);
+    // 2. 덱 삭제
+    await db.runAsync('DELETE FROM decks WHERE id = ?', [id]);
+    console.log(`덱 ID ${id} 삭제 완료`);
+  } catch (error) {
+    console.error('덱 삭제 실패:', error);
+  }
+};
