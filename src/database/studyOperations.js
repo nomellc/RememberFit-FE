@@ -3,6 +3,8 @@ import {db} from './database';
 // 카드 학습 결과 업데이트
 export const updateCardStatus = async (cardId, interval, repetition, easeFactor, nextDate) => {
     try {
+        console.log(`[DB 저장 시도] 카드ID: ${cardId}, 날짜: ${nextDate}`);
+        
         await db.runAsync(
             `INSERT OR REPLACE INTO study_logs
         (card_id, interval, repetition, ease_factor, next_review_date)

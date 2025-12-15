@@ -13,9 +13,8 @@ const STATUS_DATA = [
 ];
 
 const RECENT_DECKS = [
-    {id: 1, title: 'CS 면접 대비', count: 5},
-    {id: 2, title: '일본어 기초', count: 10},
-    {id:3, title: '정보처리기사 실기', count: 0},
+    {id: 1, title: 'JLPT', count: 5},
+    {id: 2, title: '정보처리기사 실기', count: 3},
 ];
 
 export default function HomeScreen({navigation}) {

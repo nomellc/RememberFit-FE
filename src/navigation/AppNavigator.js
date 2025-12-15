@@ -24,7 +24,7 @@ export default function AppNavigator() {
                 options={{title: '홈'}}
                 />
                 <Tab.Screen 
-                name="Deck"
+                name="Decks"
                 component={DeckStackNavigator}
                 options={{title: '덱', headerShown: false}}
                 />

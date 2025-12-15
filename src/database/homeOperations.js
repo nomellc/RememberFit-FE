@@ -34,3 +34,21 @@ export const getHomeStats = async () => {
         return {review: 0, new: 0, done: 0};
     }
 };
+
+export const getRecentDecks = async () => {
+    try {
+        const query = `
+        SELECT d.id, d.title, COUNT(c.id) as count
+        FROM decks d
+        LEFT JOIN cards c ON d.id = c.deck_id
+        GROUP BY d.id
+        ORDER BY d.id DESC
+        LIMIT 3`;
+
+        const decks = await db.getAllAsync(query);
+        return decks;
+    } catch(error) {
+        console.error('최근 덱 로딩 실패: ', error);
+        return [];
+    }
+};
