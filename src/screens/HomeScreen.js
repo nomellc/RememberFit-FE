@@ -1,7 +1,9 @@
-import React from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Button} from 'react-native';
+import React, {useState, useCallback} from 'react';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/color';
+import { getHomeStats } from '../database/homeOperations';
 
 // 데미 데이터
 const STATUS_DATA = [
@@ -17,33 +19,54 @@ const RECENT_DECKS = [
 ];
 
 export default function HomeScreen({navigation}) {
+  // 상태 관리
+  const [stats, setStats] = useState({review: 0, new: 0, done: 0});
+
+  // 화면이 포커스될 때마다 실행(새로고침)
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [])
+  );
+
+  const loadStats = async () => {
+    const data = await getHomeStats();
+    setStats(data);
+  };
+
     return (
         // SafeAreaViewBase: 아이폰 노치 영역 침범 방지
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
             <ScrollView style={styles.container}>
-                {/* 섹션 1: 헤더 */}
+                {/* 헤더 */}
         <View style={styles.header}>
             <Text style={styles.greeting}>안녕하세요, 학습자님 👋</Text>
-            <Text style={styles.subGreeting}>🔥 5일 연속 학습 중!</Text>
+            <Text style={styles.subGreeting}>오늘도 힘내서 공부해봅시다!</Text>
         </View>
 
-        {/* 섹션 2: 학습 현황 (박스 3개) */}
+        {/* 학습 현황 (박스 3개) */}
         <View style={styles.statusContainer}>
-            {STATUS_DATA.map((item, index) => (
-                <View key={index} style={styles.statusCard}>
-                    <Text style={[styles.statusCount, {color: item.color}]}>{item.count}</Text>
-                    <Text style={[styles.statusLabel]}>{item.label}</Text>
-                </View>
-            ))}
+           <View style={styles.statusCard}>
+            <Text style={[styles.statusCount, {color: colors.primary}]}>{stats.new}</Text>
+            <Text style={styles.statusLabel}>New</Text>
+           </View>
+           <View style={styles.statusCard}>
+            <Text style={[styles.statusCount, {color:colors.danger}]}>{stats.review}</Text>
+            <Text style={styles.statusLabel}>Review</Text>
+           </View>
+            <View style={styles.statusCard}>
+              <Text style={[styles.statusCount, {color: colors.success}]}>{stats.done}</Text>
+              <Text style={styles.statusLabel}>Done</Text>
+            </View>
         </View>
 
-        {/* 섹션 3: 오늘의 학습 시작 버튼 */}
-        <TouchableOpacity style={styles.heroButton} onPress={() => alert('학습 기능')}>
+        {/* 오늘의 학습 시작 버튼 */}
+        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate('Decks')}>
             <Text style={styles.heroTitle}>▶ 오늘의 학습 시작하기</Text>
-            <Text style={styles.heroSubtitle}>총 n개의 카드가 기다리고 있어요.</Text>
+            <Text style={styles.heroSubtitle}>{stats.review > 0 ?  `총 ${stats.review}장의 카드가 기다리고 있어요.` : `복습 끝! 새 카드를 학습해보세요.`}</Text>
         </TouchableOpacity>
 
-        {/* 섹션 4: 최근 학습한 덱 목록 */}
+        {/* 최근 학습한 덱 목록 */}
         <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>최근 학습한 덱</Text>
         </View>

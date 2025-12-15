@@ -1,4 +1,5 @@
 import {db} from './database';
+import {format} from 'date-fns';
 
 // 1. 특정 덱의 카드 가져오기 (Read)
 export const getCards = async (deckId) => {
@@ -31,13 +32,16 @@ export const addCard = async (deckId, front, back) => {
 // 3. 학습용 카드 가져오기
 export const getCardsForStudy = async (deckId) => {
     try {
-        // COALESCE(..., 0): NULL일 경우 기본값을 0이나 2.5로 채워주는 함수
+        const today = format(new Date(), 'yyyy-MM-dd'); // 오늘 날짜
+        // study_logs가 아예 없는 카드 (새 카드)
+        // OR study_logs가 있는데, next_review_date가 오늘보다 작거나 같은 카드 (복습 카드)
         const query = `
         SELECT c.*, COALESCE(s.interval, 0) as interval, COALESCE(s.repetition, 0) as repetition, COALESCE(s.ease_factor, 2.5) as ease_factor
         FROM cards c
         LEFT JOIN study_logs s ON c.id = s.card_id
-        WHERE c.deck_id = ?`;
-        const cards = await db.getAllAsync(query, [deckId]);
+        WHERE c.deck_id = ?
+        AND (s.next_review_date IS NULL OR s.next_review_date <= ?)`;
+        const cards = await db.getAllAsync(query, [deckId, today]);
         return cards;
     } catch(error) {
         console.error('학습 카드 로딩 실패: ', error);
