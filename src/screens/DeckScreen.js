@@ -1,17 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Button, TextInput, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/color';
 
 // deleteDeck 추가됨
-import { createDeck, getDecks, deleteDeck } from '../database/deckOperations';
+import { getDecks, createDeck, deleteDeck } from "../api";
 
 export default function DeckScreen({ navigation }) {
-    const [text, setText] = useState('');
     const [decks, setDecks] = useState([]);
+    const [newDeckTitle, setNewDeckTitle] = useState('');
 
-    // 화면이 포커스될 때마다 목록 새로고침
     useFocusEffect(
         useCallback(() => {
             loadDecks();
@@ -24,17 +22,13 @@ export default function DeckScreen({ navigation }) {
     };
 
     const handleAddDeck = async () => {
-        if (text.trim() === '') return;
-        try {
-            await createDeck(text);
-            setText('');
-            loadDecks();
-        } catch (error) {
-            console.log('덱 추가 실패:', error);
-        }
+        if (newDeckTitle.trim() === '') return;
+        
+        await createDeck(newDeckTitle);
+        setNewDeckTitle('');
+        loadDecks();
     };
 
-    // [추가됨] 덱 삭제 핸들러
     const handleDelete = (id) => {
         Alert.alert(
             "덱 삭제",
@@ -45,56 +39,75 @@ export default function DeckScreen({ navigation }) {
                     text: "삭제", 
                     style: "destructive", 
                     onPress: async () => {
-                        await deleteDeck(id); // DB에서 삭제
-                        loadDecks(); // 목록 새로고침
+                        await deleteDeck(id); 
+                        loadDecks(); 
                     }
                 }
             ]
         );
     };
 
-    return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <View style={styles.inputContainer}>
-                    <TextInput 
-                        style={styles.input}
-                        placeholder="새 덱 이름"
-                        value={text}
-                        onChangeText={setText}
-                    />
-                    <Button title="추가" onPress={handleAddDeck}/>
-                </View>
-
-                <FlatList
-                    data={decks}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({item}) => (
-                        <TouchableOpacity
-                            style={styles.deckItem}
-                            // 짧게 누르면: 카드 목록 이동
-                            onPress={() => navigation.navigate('CardList', {
-                                deckId: item.id,
-                                deckTitle: item.title
-                            })}
-                            // [추가됨] 길게 누르면: 삭제 알림창
-                            onLongPress={() => handleDelete(item.id)}
-                            delayLongPress={500} // 0.5초 누르면 실행
-                        >
-                            <Text style={styles.deckTitle}>{item.title}</Text>
-                        </TouchableOpacity>
-                    )}
-                />
+    const renderItem = ({item}) => (
+        <TouchableOpacity
+            style={styles.deckItem}
+            onPress={() => navigation.navigate('CardList', { deckId: item.id, deckTitle: item.title })}
+            onLongPress={() => handleDelete(item.id)}
+        >
+            <View>
+                <Text style={styles.deckTitle}>{item.title}</Text>
+                <Text style={styles.deckCount}>
+                    {item.cardCount !== undefined ? `${item.cardCount} Cards` : 'Cards'}
+                </Text>
             </View>
-        </SafeAreaView>
-    );
+        </TouchableOpacity>
+    )
+
+    return (
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>나의 덱 목록</Text>
+            </View>
+            
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="새로운 덱 이름 입력"
+                    value={newDeckTitle}
+                    onChangeText={setNewDeckTitle}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={handleAddDeck}>
+                    <Text style={styles.addButtonText}>+</Text>
+                </TouchableOpacity>
+            </View>
+
+            <FlatList
+                data={decks}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={<Text style={styles.emptyText}>등록된 덱이 없습니다.</Text>}
+            />
+        </KeyboardAvoidingView>
+    );    
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
-  container: { flex: 1, padding: 20 },
-  inputContainer: { flexDirection: 'row', marginBottom: 20, alignItems: 'center' },
-  input: { flex: 1, borderWidth: 1, borderColor: '#ccc', padding: 10, marginRight: 10, borderRadius: 5, backgroundColor: 'white' },
-  deckItem: { padding: 20, backgroundColor: 'white', marginBottom: 10, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5, elevation: 3 },
-  deckTitle: { fontSize: 18, fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { padding: 20, paddingTop: 60, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', color: colors.text },
+  listContent: { padding: 20, paddingBottom: 20 },
+  deckItem: { backgroundColor: 'white', padding: 20, borderRadius: 15, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2 },
+  deckTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  deckCount: { fontSize: 14, color: '#888', marginTop: 5 },
+  emptyText: { textAlign: 'center', marginTop: 50, color: '#999' },
+  inputContainer: { 
+    flexDirection: 'row', 
+    padding: 20, 
+    backgroundColor: 'white', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#eee' 
+  },
+  input: { flex: 1, backgroundColor: '#f5f5f5', padding: 15, borderRadius: 30, marginRight: 10, fontSize: 16 },
+  addButton: { width: 50, height: 50, backgroundColor: colors.primary, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
+  addButtonText: { color: 'white', fontSize: 24, fontWeight: 'bold' },
 });

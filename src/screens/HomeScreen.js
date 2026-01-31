@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../theme/color';
-import { getHomeStats, getRecentDecks } from '../database/homeOperations';
+import { getHomeStats, getDecks } from '../api';
 
 export default function HomeScreen({navigation}) {
   // 상태 관리
@@ -19,10 +19,10 @@ export default function HomeScreen({navigation}) {
 
   const loadData = async () => {
     const statData = await getHomeStats();
-    setStats(statData);
+    setStats(statData || {newCount: 0, reviewCount: 0, doneCount: 0});
 
-    const deckData = await getRecentDecks();
-    setRecentDecks(deckData);
+    const decks = await getDecks();
+    setRecentDecks(decks.slice(0,3));
   };
 
     return (
@@ -38,23 +38,23 @@ export default function HomeScreen({navigation}) {
         {/* 학습 현황 (박스 3개) */}
         <View style={styles.statusContainer}>
            <View style={styles.statusCard}>
-            <Text style={[styles.statusCount, {color: colors.primary}]}>{stats.new}</Text>
+            <Text style={[styles.statusCount, {color: colors.primary}]}>{stats.newCount}</Text>
             <Text style={styles.statusLabel}>New</Text>
            </View>
            <View style={styles.statusCard}>
-            <Text style={[styles.statusCount, {color:colors.danger}]}>{stats.review}</Text>
+            <Text style={[styles.statusCount, {color:colors.danger}]}>{stats.reviewCount}</Text>
             <Text style={styles.statusLabel}>Review</Text>
            </View>
             <View style={styles.statusCard}>
-              <Text style={[styles.statusCount, {color: colors.success}]}>{stats.done}</Text>
+              <Text style={[styles.statusCount, {color: colors.success}]}>{stats.doneCount}</Text>
               <Text style={styles.statusLabel}>Done</Text>
             </View>
         </View>
 
         {/* 오늘의 학습 시작 버튼 */}
-        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate('Decks')}>
+        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate('Decks', {screen: 'DeckList'})}>
             <Text style={styles.heroTitle}>▶ 오늘의 학습 시작하기</Text>
-            <Text style={styles.heroSubtitle}>{stats.review > 0 ?  `총 ${stats.review}장의 카드가 기다리고 있어요.` : `복습 끝! 새 카드를 학습해보세요.`}</Text>
+            <Text style={styles.heroSubtitle}>{stats.reviewCount > 0 ?  `총 ${stats.reviewCount}장의 카드가 기다리고 있어요.` : `복습 끝! 새 카드를 학습해보세요.`}</Text>
         </TouchableOpacity>
 
         {/* 최근 학습한 덱 목록 */}
@@ -73,7 +73,7 @@ export default function HomeScreen({navigation}) {
             })}>
                 <View style={styles.deckInfo}>
                     <Text style={styles.deckTitle}>{deck.title}</Text>
-                    <Text style={styles.deckCount}>잔여: {deck.count}장</Text>
+                    <Text style={styles.deckCount}>{deck.cardCount !== undefined ? `총 ${deck.cardCount}장` : '터치해서 이동'}</Text>
                 </View>
             </TouchableOpacity>
         ))}
@@ -86,109 +86,21 @@ export default function HomeScreen({navigation}) {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    padding: 20, // 양옆 위아래 여백
-  },
-  
-  // 헤더 스타일
-  header: {
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  greeting: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 5,
-  },
-  subGreeting: {
-    fontSize: 14,
-    color: '#FF9500',
-    fontWeight: '600',
-  },
-
-  // 상태 카드 스타일
-  statusContainer: {
-    flexDirection: 'row', // 가로로 배치
-    justifyContent: 'space-between', // 사이 간격 균등하게
-    marginBottom: 30,
-  },
-  statusCard: {
-    backgroundColor: colors.white,
-    width: '30%', // 3개니까 30%씩
-    padding: 15,
-    borderRadius: 12,
-    alignItems: 'center', // 텍스트 가운데 정렬
-    // 그림자 효과 (iOS & Android)
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    elevation: 2, 
-  },
-  statusCount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  statusLabel: {
-    fontSize: 12,
-    color: colors.subText,
-  },
-
-  // 메인 액션 버튼
-  heroButton: {
-    backgroundColor: colors.primary,
-    padding: 25,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginBottom: 30,
-    // 그림자
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  heroTitle: {
-    color: colors.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  heroSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)', // 반투명 흰색
-    fontSize: 14,
-  },
-
-  // 최근 덱 리스트
-  sectionHeader: {
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  deckRow: {
-    backgroundColor: colors.white,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  deckTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  deckCount: {
-    fontSize: 12,
-    color: colors.subText,
-    marginTop: 4,
-  },
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { padding: 20 },
+  header: { marginBottom: 20, marginTop: 10 },
+  greeting: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 5 },
+  subGreeting: { fontSize: 14, color: '#FF9500', fontWeight: '600' },
+  statusContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
+  statusCard: { backgroundColor: 'white', width: '30%', padding: 15, borderRadius: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2 },
+  statusCount: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+  statusLabel: { fontSize: 12, color: '#666' },
+  heroButton: { backgroundColor: colors.primary, padding: 25, borderRadius: 16, alignItems: 'center', marginBottom: 30, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  heroTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
+  heroSubtitle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14 },
+  sectionHeader: { marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  deckRow: { backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#eee' },
+  deckTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  deckCount: { fontSize: 12, color: '#999', marginTop: 4 },
 });

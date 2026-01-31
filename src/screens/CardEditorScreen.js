@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {View, TextInput, Button, StyleSheet, Alert} from 'react-native';
-import {addCard} from '../database/cardOperations';
+import { createCard } from '../api';
 
 export default function CardEditorScreen({route, navigation}) {
     const {deckId} = route.params;
@@ -12,8 +12,13 @@ export default function CardEditorScreen({route, navigation}) {
             Alert.alert('알림', '앞면과 뒷면 내용을 모두 입력해주세요.');
             return;
         }
-        await addCard(deckId, front, back);
-        navigation.goBack();
+        const result = await createCard(deckId, front, back);
+
+        if (result) {
+            navigation.goBack();
+        } else {
+            Alert.alert("오류", "카드 저장 중 문제가 발생했습니다.");
+        }
     };
 
     return (
