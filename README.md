@@ -1,13 +1,13 @@
+
 # *RememberFit*
 
-<img width="1920" height="1080" alt="RememberFit 소개" src="https://github.com/user-attachments/assets/5b7c635f-09b6-435c-afd7-069a6d2df843" />
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study" src="https://github.com/user-attachments/assets/03b6cf85-5d30-46d2-be21-56906bbd6671" />
 
-## 앱 소개
-**RememberFit**은 에빙하우스 망각 곡선 이론을 적용한<br/>
-스마트 단어장 어플입니다.
+## 프로젝트 소개
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study (9)" src="https://github.com/user-attachments/assets/6f810ccf-7f6d-406a-a733-5b9b35382aed" />
 
-단어를 단순히 암기하는 것이 아니라<br/>
-사용자 반응(Again, Hard, Good, Easy)에 따라 최적의 복습 주기를 계산합니다.
+
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study (1)" src="https://github.com/user-attachments/assets/78422012-ba8a-482d-8333-af35cd429400" />
 
 ---
 
@@ -33,66 +33,37 @@ npx expo start
 ---
 
 ## 앱 구조
+```text
+src/
+├── api/              # 공통 API 클라이언트
+├── components/       # 공통 UI 요소
+├── config/           # 실행 환경과 API 주소
+├── navigation/       # 탭·스택 내비게이션
+├── screens/          # 앱 화면
+├── theme/            # 디자인 토큰
+└── utils/            # 검색 등 순수 함수
 ```
-RememberFit-FE/
-├── App.js                           # 앱 진입점
-├── src
-    ├── database
-    │   ├── database.js              # DB 연결 및 테이블 생성
-    │   ├── homeOperations.js        # 홈 화면 통계 데이터 조회
-    │   ├── deckOperations.js        # 덱 CRUD 로직
-    │   ├── cardOperations.js        # 카드 CRUD 및 학습 필터링
-    │   └── studyOperations.js       # 학습 결과 저장 로직
-    ├── navigation
-    │   ├── AppNavigator.js          # 메인 하단 탭 네비게이션 설정
-    │   └── DeckStackNavigator.js    # 덱 내부 화면 이동(Stack) 설정
-    ├── screens
-    │   ├── HomeScreen.js            # 메인 대시보드 화면
-    │   ├── DeckScreen.js            # 덱 목록 화면
-    │   ├── CardEditorScreen.js      # 카드 추가/삭제 화면
-    │   ├── CardListScreen.js        # 카드 목록 화면
-    │   ├── StudyScreen.js           # 학습 진행 화면
-    │   └── StatsScreen.js           # 통계 화면
-    ├── theme
-    │   └── color.js                 # 공통 색상 테마 정의
-    └── utils
-        └── sm2.js                   # SuperMemo-2 알고리즘 구현
-├── app.json
-├── babel.config.js
-├── index.js
-├── package-lock.json
-└── package.json
-```
-
- 
- 
-## 앱 기능 개요
-
-### SuperMemo-2 (SM-2) 알고리즘
-“아는 것은 나중에, 모르는 것은 자주 노출하여 학습 시간 단축“
-- **Quality (사용자 피드백)**: 몰라요(0) ~ 쉬움(5)
-- **E-Factor (난이도 계수)**: 카드가 얼마나 쉬운지를 나타내는 고유 값 (기본 2.5)
-  - 쉽다고 답하면 → 계수 증가 (주기가 더 빠르게 늘어남)
-  - 어렵다고 답하면 → 계수 감소 (주기가 천천히 늘어남)
-- **Interval (복습 간격)**: 며칠 뒤에 다시 볼 것인가?
 
 ---
 
 ## 사용 방법
 
 ### 1. 홈 화면
-오늘의 학습 시작하기 버튼으로 학습을 시작할 수 있습니다.<br/>
-SM-2 알고리즘에 의해 분류된 카드 덱만 나타납니다. <br/>
+오늘 학습할 새 카드와 복습 카드 수, 기억 완료 현황을 한눈에 확인하고 바로 학습을 시작할 수 있습니다. <br/>
 
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/ce406794-740f-4b16-aa28-ba7780e955f6" />
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study (7)" src="https://github.com/user-attachments/assets/9b183e04-b044-4674-9b83-d38000d14623" />
+
+
+
 
 ---
 
-### 2. 덱 화면
-덱 이름을 입력하면 새로운 덱이 생성되고,<br/>
-생성된 덱은 아래 리스트로 나타납니다. <br/>
+### 2. 암기장 화면
+학습 주제별로 암기장을 만들고 이름을 수정하거나 삭제할 수 있습니다. 각 암기장에 포함된 카드 수도 함께 표시됩니다. <br/>
 
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/784e19b1-fa2c-4c87-9f21-039d172332fe" />
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study (8)" src="https://github.com/user-attachments/assets/cc06c5eb-84d0-4895-a8ea-8379047d8c1b" />
+
+
 
 ---
 
@@ -100,14 +71,15 @@ SM-2 알고리즘에 의해 분류된 카드 덱만 나타납니다. <br/>
 카드 앞면을 터치하면 뒷면에 정답이 나옵니다. <br/>
 난이도를 선택하면 그 난이도에 따라 다음 학습 날짜가 자동으로 결정됩니다. <br/>
 
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/5e88db7d-8164-4fba-9466-74879101f103" />
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study (5)" src="https://github.com/user-attachments/assets/63162578-9417-43c8-ac3b-dfd18907217f" />
+
 
 ---
 
 ### 4. 통계 화면
-사용자가 갖고 있는 카드의 총 개수와<br/>
-난이도 점수의 평균이 표시됩니다. <br/>
+누적 학습 횟수, 최근 7일 학습량, 연속 학습일과 평가 분포를 실제 학습 기록을 기준으로 확인할 수 있습니다. <br/>
 
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/09067d02-1531-4d0c-b4b1-5efa58c86631" />
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study (6)" src="https://github.com/user-attachments/assets/81c5e10c-874d-403b-91ee-aab3fa97aa9b" />
+
 
 
