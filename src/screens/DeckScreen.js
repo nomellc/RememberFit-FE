@@ -1,113 +1,310 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors } from '../theme/color';
-
-// deleteDeck 추가됨
-import { getDecks, createDeck, deleteDeck } from "../api";
+import BrandMark from '../components/BrandMark';
+import EmptyState from '../components/EmptyState';
+import { createDeck, deleteDeck, getDecks } from '../api';
+import { colors, radius, spacing, type } from '../theme/color';
 
 export default function DeckScreen({ navigation }) {
-    const [decks, setDecks] = useState([]);
-    const [newDeckTitle, setNewDeckTitle] = useState('');
+  const [decks, setDecks] = useState([]);
+  const [newDeckTitle, setNewDeckTitle] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
-    useFocusEffect(
-        useCallback(() => {
+  const loadDecks = async ({ refreshing = false } = {}) => {
+    refreshing ? setIsRefreshing(true) : setIsLoading(true);
+    const data = await getDecks();
+    setDecks(data);
+    setIsLoading(false);
+    setIsRefreshing(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDecks();
+    }, [])
+  );
+
+  const handleAddDeck = async () => {
+    const title = newDeckTitle.trim();
+    if (!title || isAdding) return;
+
+    setIsAdding(true);
+    const result = await createDeck(title);
+    setIsAdding(false);
+
+    if (result === null) {
+      Alert.alert('암기장을 만들지 못했어요', '서버 연결을 확인한 뒤 다시 시도해주세요.');
+      return;
+    }
+
+    setNewDeckTitle('');
+    loadDecks();
+  };
+
+  const handleDelete = (deck) => {
+    Alert.alert(
+      '암기장 삭제',
+      `‘${deck.title}’ 암기장과 안의 모든 카드를 삭제할까요?`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteDeck(deck.id);
+            if (result === null) {
+              Alert.alert('삭제하지 못했어요', '잠시 후 다시 시도해주세요.');
+              return;
+            }
             loadDecks();
-        }, [])
+          },
+        },
+      ]
     );
+  };
 
-    const loadDecks = async () => {
-        const data = await getDecks();
-        setDecks(data);
-    };
+  const renderHeader = () => (
+    <>
+      <View style={styles.brandRow}>
+        <BrandMark />
+        <Text style={styles.brandName}>REMEMBERFIT</Text>
+      </View>
 
-    const handleAddDeck = async () => {
-        if (newDeckTitle.trim() === '') return;
-        
-        await createDeck(newDeckTitle);
-        setNewDeckTitle('');
-        loadDecks();
-    };
+      <View style={styles.heading}>
+        <Text style={styles.eyebrow}>MY COLLECTION</Text>
+        <Text style={styles.title}>나의 암기장</Text>
+        <Text style={styles.subtitle}>주제별로 카드를 모으고, 필요한 순간 다시 꺼내보세요.</Text>
+      </View>
 
-    const handleDelete = (id) => {
-        Alert.alert(
-            "덱 삭제",
-            "정말 삭제하시겠습니까?\n이 덱에 포함된 모든 카드도 함께 삭제됩니다.",
-            [
-                { text: "취소", style: "cancel" },
-                { 
-                    text: "삭제", 
-                    style: "destructive", 
-                    onPress: async () => {
-                        await deleteDeck(id); 
-                        loadDecks(); 
-                    }
-                }
-            ]
-        );
-    };
+      <View style={styles.createBox}>
+        <Text style={styles.inputLabel}>새 암기장</Text>
+        <View style={styles.inputRow}>
+          <TextInput
+            accessibilityLabel="새 암기장 이름"
+            autoCapitalize="none"
+            blurOnSubmit
+            maxLength={40}
+            onChangeText={setNewDeckTitle}
+            onSubmitEditing={handleAddDeck}
+            placeholder="예: 여행 영어, 자격증 핵심"
+            placeholderTextColor={colors.muted}
+            returnKeyType="done"
+            style={styles.input}
+            value={newDeckTitle}
+          />
+          <TouchableOpacity
+            accessibilityLabel="암기장 추가"
+            accessibilityRole="button"
+            activeOpacity={0.8}
+            disabled={!newDeckTitle.trim() || isAdding}
+            onPress={handleAddDeck}
+            style={[
+              styles.addButton,
+              (!newDeckTitle.trim() || isAdding) && styles.addButtonDisabled,
+            ]}
+          >
+            {isAdding ? (
+              <ActivityIndicator color={colors.surface} size="small" />
+            ) : (
+              <MaterialCommunityIcons name="plus" size={24} color={colors.surface} />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
 
-    const renderItem = ({item}) => (
-        <TouchableOpacity
-            style={styles.deckItem}
-            onPress={() => navigation.navigate('CardList', { deckId: item.id, deckTitle: item.title })}
-            onLongPress={() => handleDelete(item.id)}
-        >
-            <View>
-                <Text style={styles.deckTitle}>{item.title}</Text>
-                <Text style={styles.deckCount}>
-                    {item.cardCount !== undefined ? `${item.cardCount} Cards` : 'Cards'}
-                </Text>
-            </View>
-        </TouchableOpacity>
-    )
+      <View style={styles.listHeading}>
+        <Text style={styles.listTitle}>전체 암기장</Text>
+        <Text style={styles.listCount}>{decks.length}</Text>
+      </View>
+    </>
+  );
 
-    return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>나의 덱 목록</Text>
-            </View>
-            
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="새로운 덱 이름 입력"
-                    value={newDeckTitle}
-                    onChangeText={setNewDeckTitle}
-                />
-                <TouchableOpacity style={styles.addButton} onPress={handleAddDeck}>
-                    <Text style={styles.addButtonText}>+</Text>
-                </TouchableOpacity>
-            </View>
+  const renderItem = ({ item, index }) => (
+    <View style={styles.deckItem}>
+      <TouchableOpacity
+        accessibilityHint="카드 목록을 엽니다"
+        accessibilityRole="button"
+        activeOpacity={0.7}
+        onLongPress={() => handleDelete(item)}
+        onPress={() =>
+          navigation.navigate('CardList', { deckId: item.id, deckTitle: item.title })
+        }
+        style={styles.deckMain}
+      >
+        <View style={styles.deckNumberWrap}>
+          <Text style={styles.deckNumber}>{String(index + 1).padStart(2, '0')}</Text>
+        </View>
+        <View style={styles.deckCopy}>
+          <Text numberOfLines={1} style={styles.deckTitle}>
+            {item.title}
+          </Text>
+          <Text style={styles.deckCount}>{item.cardCount || 0}장의 카드</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        accessibilityLabel={`${item.title} 암기장 삭제`}
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => handleDelete(item)}
+        style={styles.deleteButton}
+      >
+        <MaterialCommunityIcons name="trash-can-outline" size={19} color={colors.danger} />
+      </TouchableOpacity>
+    </View>
+  );
 
-            <FlatList
-                data={decks}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderItem}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={<Text style={styles.emptyText}>등록된 덱이 없습니다.</Text>}
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.safeArea}
+      >
+        <FlatList
+          contentContainerStyle={styles.content}
+          data={decks}
+          keyExtractor={(item) => item.id.toString()}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            isLoading ? (
+              <ActivityIndicator color={colors.primary} style={styles.loader} />
+            ) : (
+              <EmptyState
+                icon="notebook-plus-outline"
+                title="첫 암기장을 만들어보세요"
+                description="위 입력창에 기억하고 싶은 주제를 적으면 바로 시작할 수 있어요."
+              />
+            )
+          }
+          ListHeaderComponent={renderHeader}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => loadDecks({ refreshing: true })}
+              tintColor={colors.primary}
             />
-        </KeyboardAvoidingView>
-    );    
-};
+          }
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { padding: 20, paddingTop: 60, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: colors.text },
-  listContent: { padding: 20, paddingBottom: 20 },
-  deckItem: { backgroundColor: 'white', padding: 20, borderRadius: 15, marginBottom: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2 },
-  deckTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  deckCount: { fontSize: 14, color: '#888', marginTop: 5 },
-  emptyText: { textAlign: 'center', marginTop: 50, color: '#999' },
-  inputContainer: { 
-    flexDirection: 'row', 
-    padding: 20, 
-    backgroundColor: 'white', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#eee' 
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  content: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.huge,
   },
-  input: { flex: 1, backgroundColor: '#f5f5f5', padding: 15, borderRadius: 30, marginRight: 10, fontSize: 16 },
-  addButton: { width: 50, height: 50, backgroundColor: colors.primary, borderRadius: 25, justifyContent: 'center', alignItems: 'center' },
-  addButtonText: { color: 'white', fontSize: 24, fontWeight: 'bold' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  brandName: { ...type.eyebrow, color: colors.text, letterSpacing: 1.6 },
+  heading: { marginTop: spacing.xxxl },
+  eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
+  title: { ...type.title, color: colors.text },
+  subtitle: { ...type.body, color: colors.subText, marginTop: spacing.sm, maxWidth: 360 },
+  createBox: {
+    marginTop: spacing.xxl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  inputLabel: { ...type.caption, color: colors.text, fontWeight: '700', marginBottom: spacing.sm },
+  inputRow: { flexDirection: 'row', gap: spacing.sm },
+  input: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    color: colors.text,
+    fontSize: 15,
+  },
+  addButton: {
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+  },
+  addButtonDisabled: { backgroundColor: colors.muted },
+  listHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xxxl,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.text,
+  },
+  listTitle: { ...type.section, color: colors.text },
+  listCount: {
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    color: colors.primary,
+    fontSize: 12,
+    lineHeight: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  loader: { paddingVertical: spacing.huge },
+  deckItem: {
+    minHeight: 86,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  deckMain: { flex: 1, minHeight: 86, flexDirection: 'row', alignItems: 'center' },
+  deckNumberWrap: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    transform: [{ rotate: '-2deg' }],
+  },
+  deckNumber: { ...type.caption, color: colors.warning, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  deckCopy: { flex: 1, paddingHorizontal: spacing.md },
+  deckTitle: { fontSize: 16, color: colors.text, fontWeight: '700' },
+  deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.xs,
+    borderRadius: radius.md,
+  },
 });

@@ -1,106 +1,271 @@
-import React, {useState, useCallback} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors } from '../theme/color';
-import { getHomeStats, getDecks } from '../api';
+import BrandMark from '../components/BrandMark';
+import EmptyState from '../components/EmptyState';
+import { getDecks, getHomeStats } from '../api';
+import { colors, radius, spacing, type } from '../theme/color';
 
-export default function HomeScreen({navigation}) {
-  // 상태 관리
-  const [stats, setStats] = useState({review: 0, new: 0, done: 0});
+const EMPTY_STATS = { newCount: 0, reviewCount: 0, doneCount: 0 };
+
+function StatItem({ value, label, tone, last }) {
+  return (
+    <View style={[styles.statItem, !last && styles.statDivider]}>
+      <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+export default function HomeScreen({ navigation }) {
+  const [stats, setStats] = useState(EMPTY_STATS);
   const [recentDecks, setRecentDecks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // 화면이 포커스될 때마다 실행(새로고침)
+  const todayLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat('ko-KR', {
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long',
+      }).format(new Date()),
+    []
+  );
+
+  const loadData = async ({ refreshing = false } = {}) => {
+    refreshing ? setIsRefreshing(true) : setIsLoading(true);
+    const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
+    setStats(statData || EMPTY_STATS);
+    setRecentDecks(decks.slice(0, 3));
+    setIsLoading(false);
+    setIsRefreshing(false);
+  };
+
   useFocusEffect(
     useCallback(() => {
       loadData();
     }, [])
   );
 
-  const loadData = async () => {
-    const statData = await getHomeStats();
-    setStats(statData || {newCount: 0, reviewCount: 0, doneCount: 0});
+  const reviewCount = stats.reviewCount || 0;
 
-    const decks = await getDecks();
-    setRecentDecks(decks.slice(0,3));
-  };
-
-    return (
-        // SafeAreaViewBase: 아이폰 노치 영역 침범 방지
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.container}>
-                {/* 헤더 */}
-        <View style={styles.header}>
-            <Text style={styles.greeting}>안녕하세요, 학습자님 👋</Text>
-            <Text style={styles.subGreeting}>오늘도 힘내서 공부해봅시다!</Text>
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadData({ refreshing: true })}
+            tintColor={colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.brandRow}>
+          <BrandMark />
+          <View>
+            <Text style={styles.brandName}>REMEMBERFIT</Text>
+            <Text style={styles.brandCaption}>기억을 만드는 작은 루틴</Text>
+          </View>
         </View>
 
-        {/* 학습 현황 (박스 3개) */}
-        <View style={styles.statusContainer}>
-           <View style={styles.statusCard}>
-            <Text style={[styles.statusCount, {color: colors.primary}]}>{stats.newCount}</Text>
-            <Text style={styles.statusLabel}>New</Text>
-           </View>
-           <View style={styles.statusCard}>
-            <Text style={[styles.statusCount, {color:colors.danger}]}>{stats.reviewCount}</Text>
-            <Text style={styles.statusLabel}>Review</Text>
-           </View>
-            <View style={styles.statusCard}>
-              <Text style={[styles.statusCount, {color: colors.success}]}>{stats.doneCount}</Text>
-              <Text style={styles.statusLabel}>Done</Text>
-            </View>
+        <View style={styles.intro}>
+          <Text style={styles.date}>{todayLabel}</Text>
+          <Text style={styles.title}>오늘의 기억을{`\n`}가볍게 이어가요.</Text>
         </View>
 
-        {/* 오늘의 학습 시작 버튼 */}
-        <TouchableOpacity style={styles.heroButton} onPress={() => navigation.navigate('Decks', {screen: 'DeckList'})}>
-            <Text style={styles.heroTitle}>▶ 오늘의 학습 시작하기</Text>
-            <Text style={styles.heroSubtitle}>{stats.reviewCount > 0 ?  `총 ${stats.reviewCount}장의 카드가 기다리고 있어요.` : `복습 끝! 새 카드를 학습해보세요.`}</Text>
-        </TouchableOpacity>
-
-        {/* 최근 학습한 덱 목록 */}
-        <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>최근 학습한 덱</Text>
-        </View>
-
-        {recentDecks.length === 0 && (
-          <Text style={{color: '#999', marginTop: 10}}>아직 생성된 덱이 없습니다.</Text>
+        {isLoading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={styles.loadingText}>학습 현황을 정리하고 있어요</Text>
+          </View>
+        ) : (
+          <View style={styles.statsStrip}>
+            <StatItem value={stats.newCount || 0} label="새 카드" tone={colors.primary} />
+            <StatItem value={reviewCount} label="복습 예정" tone={colors.warning} />
+            <StatItem value={stats.doneCount || 0} label="기억 완료" tone={colors.success} last />
+          </View>
         )}
 
-        {recentDecks.map((deck) => (
-            <TouchableOpacity key={deck.id} style={styles.deckRow} onPress={() => navigation.navigate('Decks', {
-              screen: 'CardList',
-              params: {deckId: deck.id, deckTitle: deck.title}
-            })}>
-                <View style={styles.deckInfo}>
-                    <Text style={styles.deckTitle}>{deck.title}</Text>
-                    <Text style={styles.deckCount}>{deck.cardCount !== undefined ? `총 ${deck.cardCount}장` : '터치해서 이동'}</Text>
-                </View>
-            </TouchableOpacity>
-        ))}
+        <TouchableOpacity
+          accessibilityRole="button"
+          activeOpacity={0.88}
+          style={styles.studyCard}
+          onPress={() => navigation.navigate('Decks', { screen: 'DeckList' })}
+        >
+          <View style={styles.studyCardCopy}>
+            <Text style={styles.studyEyebrow}>TODAY'S SESSION</Text>
+            <Text style={styles.studyTitle}>오늘 학습 시작하기</Text>
+            <Text style={styles.studySubtitle}>
+              {reviewCount > 0
+                ? `${reviewCount}장의 카드가 복습을 기다리고 있어요.`
+                : '새 암기장을 열고 첫 카드를 만들어보세요.'}
+            </Text>
+          </View>
+          <View style={styles.arrowButton}>
+            <MaterialCommunityIcons name="arrow-right" size={22} color={colors.primaryDark} />
+          </View>
+          <View style={styles.studyCardAccent} />
+        </TouchableOpacity>
 
-        {/* 하단 여백 */}
-        <View style={{height: 20}}/>
-        </ScrollView>
-        </SafeAreaView>
-    )
-};
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionEyebrow}>RECENT</Text>
+            <Text style={styles.sectionTitle}>최근 암기장</Text>
+          </View>
+          {recentDecks.length > 0 && (
+            <TouchableOpacity onPress={() => navigation.navigate('Decks')}>
+              <Text style={styles.allLink}>전체 보기</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {recentDecks.length === 0 && !isLoading ? (
+          <EmptyState
+            icon="notebook-outline"
+            title="아직 암기장이 없어요"
+            description="배우고 싶은 주제로 첫 암기장을 만들어보세요."
+            actionLabel="암기장 만들기"
+            onAction={() => navigation.navigate('Decks')}
+          />
+        ) : (
+          <View style={styles.deckList}>
+            {recentDecks.map((deck, index) => (
+              <TouchableOpacity
+                accessibilityRole="button"
+                activeOpacity={0.75}
+                key={deck.id}
+                style={styles.deckRow}
+                onPress={() =>
+                  navigation.navigate('Decks', {
+                    screen: 'CardList',
+                    params: { deckId: deck.id, deckTitle: deck.title },
+                  })
+                }
+              >
+                <Text style={styles.deckIndex}>{String(index + 1).padStart(2, '0')}</Text>
+                <View style={styles.deckInfo}>
+                  <Text numberOfLines={1} style={styles.deckTitle}>
+                    {deck.title}
+                  </Text>
+                  <Text style={styles.deckCount}>{deck.cardCount || 0}장의 카드</Text>
+                </View>
+                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  container: { padding: 20 },
-  header: { marginBottom: 20, marginTop: 10 },
-  greeting: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 5 },
-  subGreeting: { fontSize: 14, color: '#FF9500', fontWeight: '600' },
-  statusContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  statusCard: { backgroundColor: 'white', width: '30%', padding: 15, borderRadius: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, elevation: 2 },
-  statusCount: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
-  statusLabel: { fontSize: 12, color: '#666' },
-  heroButton: { backgroundColor: colors.primary, padding: 25, borderRadius: 16, alignItems: 'center', marginBottom: 30, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  heroTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
-  heroSubtitle: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 14 },
-  sectionHeader: { marginBottom: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  deckRow: { backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#eee' },
-  deckTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  deckCount: { fontSize: 12, color: '#999', marginTop: 4 },
+  content: {
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.huge,
+  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  brandName: { ...type.eyebrow, color: colors.text, letterSpacing: 1.6 },
+  brandCaption: { ...type.caption, color: colors.subText, marginTop: 2 },
+  intro: { marginTop: spacing.xxxl, marginBottom: spacing.xxl },
+  date: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
+  title: { ...type.title, color: colors.text },
+  loadingBox: {
+    height: 92,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+  },
+  loadingText: { ...type.caption, color: colors.subText },
+  statsStrip: {
+    height: 92,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  statItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  statDivider: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
+  statValue: { fontSize: 24, lineHeight: 30, fontWeight: '800', letterSpacing: -0.5 },
+  statLabel: { ...type.caption, color: colors.subText, marginTop: 2 },
+  studyCard: {
+    minHeight: 174,
+    marginTop: spacing.lg,
+    padding: spacing.xxl,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primaryDark,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  studyCardCopy: { flex: 1, paddingRight: spacing.lg, zIndex: 1 },
+  studyEyebrow: { ...type.eyebrow, color: '#BFD0C7' },
+  studyTitle: { fontSize: 22, lineHeight: 29, fontWeight: '700', color: colors.surface, marginTop: spacing.sm },
+  studySubtitle: { ...type.caption, color: '#CFD9D3', marginTop: spacing.sm, maxWidth: 250 },
+  arrowButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  studyCardAccent: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderWidth: 24,
+    borderColor: 'rgba(255,255,255,0.055)',
+    borderRadius: radius.pill,
+    right: -35,
+    top: -45,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: spacing.xxxl,
+    marginBottom: spacing.md,
+  },
+  sectionEyebrow: { ...type.eyebrow, color: colors.muted, marginBottom: 3 },
+  sectionTitle: { ...type.section, color: colors.text },
+  allLink: { ...type.caption, color: colors.primary, fontWeight: '700', paddingVertical: spacing.xs },
+  deckList: { borderTopWidth: 1, borderTopColor: colors.text },
+  deckRow: {
+    minHeight: 76,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  deckIndex: { width: 40, ...type.caption, color: colors.muted, fontVariant: ['tabular-nums'] },
+  deckInfo: { flex: 1 },
+  deckTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
 });

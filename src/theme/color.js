@@ -1,13 +1,82 @@
 export const colors = {
-    primary: '#007AFF',      // 메인 파란색
-    background: '#F9FAFB',      // 배경색
-    white: '#FFFFFF',   
-    text: '#101828',    // 기본 글자색
-    subText: '#6A7282',     // 보조 글자색
-    border: '#E5E5E5',   // 테두리 색상
+  background: '#F4F1E8',
+  surface: '#FCFBF7',
+  surfaceMuted: '#ECE8DD',
+  white: '#FFFFFF',
 
-    // 상태별 색상
-    success: '#34C759',       // 초록 (완료)
-    danger: '#FF3B30',        // 빨강 (Again)
-    warning: '#FF9500',      // 주황 (Hard)
-}
+  text: '#20231F',
+  subText: '#6D7068',
+  muted: '#94968E',
+  border: '#D9D4C8',
+
+  primary: '#315C4C',
+  primaryDark: '#244538',
+  primarySoft: '#DCE7E0',
+  accent: '#D39B44',
+  accentSoft: '#F2E3C7',
+
+  success: '#49745F',
+  successSoft: '#DDE9E1',
+  warning: '#A56E2D',
+  warningSoft: '#F3E5CF',
+  danger: '#B85C4E',
+  dangerSoft: '#F3DFDB',
+};
+
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  huge: 40,
+};
+
+export const radius = {
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 24,
+  pill: 999,
+};
+
+export const type = {
+  eyebrow: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontSize: 30,
+    lineHeight: 38,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+  },
+  section: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    letterSpacing: -0.35,
+  },
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  caption: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+};
+
+export const shadow = {
+  card: {
+    shadowColor: '#20231F',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+};

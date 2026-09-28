@@ -1,150 +1,360 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Dimensions, Animated, TouchableOpacity, Alert } from 'react-native';
-import { colors } from '../theme/color';
-import { getDueCards,gradeCard } from '../api';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import EmptyState from '../components/EmptyState';
+import { getDueCards, gradeCard } from '../api';
+import { colors, radius, shadow, spacing, type } from '../theme/color';
 
-export default function StudyScreen({route, navigation}) {
-    const {deckId} = route.params; // 덱 목록에서 넘겨준 ID
-    
-    const [cards, setCards] = useState([]); // 전체 카드 리스트
-    const [currentIndex, setCurrentIndex] = useState(0); // 현재 보고 있는 카드 번호
-    const [isFlipped, setIsFlipped] = useState(false); // 현재 뒤집혔는지 상태
+const ratingOptions = [
+  { quality: 1, label: '다시', caption: '아직 낯설어요', color: colors.dangerSoft, textColor: colors.danger },
+  { quality: 3, label: '어려움', caption: '조금 헷갈려요', color: colors.warningSoft, textColor: colors.warning },
+  { quality: 4, label: '알맞음', caption: '기억이 났어요', color: colors.primarySoft, textColor: colors.primary },
+  { quality: 5, label: '쉬움', caption: '바로 떠올랐어요', color: colors.success, textColor: colors.surface },
+];
 
-    // 애니메이션 값 (0: 앞면, 1: 뒷면)
-    const animatedValue = useRef(new Animated.Value(0)).current;
+export default function StudyScreen({ route, navigation }) {
+  const { deckId, deckTitle = '오늘의 학습' } = route.params;
+  const [cards, setCards] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
-    // 1. 화면이 켜지면 DB에서 카드 가져오기
-    useEffect(() => {
-        loadStudyCards();
-    }, []);
-
+  useEffect(() => {
     const loadStudyCards = async () => {
-        const data = await getDueCards(deckId);
-        setCards(data);
+      const data = await getDueCards(deckId);
+      setCards(data);
+      setIsLoading(false);
+    };
+
+    loadStudyCards();
+  }, [deckId]);
+
+  const handleFlip = () => {
+    if (cards.length === 0 || isSubmitting) return;
+
+    Animated.spring(animatedValue, {
+      toValue: isFlipped ? 0 : 1,
+      friction: 9,
+      tension: 46,
+      useNativeDriver: true,
+    }).start();
+    setIsFlipped((current) => !current);
+  };
+
+  const handleRate = async (quality) => {
+    if (isSubmitting) return;
+    const currentCard = cards[currentIndex];
+    setIsSubmitting(true);
+    const result = await gradeCard(deckId, currentCard.id, quality);
+
+    if (result === null) {
+      setIsSubmitting(false);
+      Alert.alert('학습 기록을 저장하지 못했어요', '서버 연결을 확인한 뒤 다시 시도해주세요.');
+      return;
     }
 
-    // 2. 뒤집기 함수
-    const handleFlip = () => {
-        if (cards.length === 0) return;
+    animatedValue.setValue(0);
+    setIsFlipped(false);
+    setIsSubmitting(false);
 
-        if (isFlipped) {
-            // 뒷면 -> 앞면으로 (0으로 돌아감)
-            Animated.spring(animatedValue, {
-                toValue: 0,
-                friction: 8, // 튕김 정도(스프링 효과)
-                tension: 10,
-                useNativeDriver: true, // 성능 최적화 필수 옵션
-            }).start();
-            setIsFlipped(false);
-        } else {
-            // 앞면 -> 뒷면으로 (1로 이동)
-            Animated.spring(animatedValue, {
-                toValue: 1,
-                friction: 8,
-                tension: 10,
-                useNativeDriver: true,
-            }).start();
-            setIsFlipped(true);
-        }
-    };
+    if (currentIndex < cards.length - 1) {
+      setCurrentIndex((index) => index + 1);
+      return;
+    }
 
-    // 3. 난이도 버튼 눌렀을 때 (다음 카드로 이동)
-    const handleRate = async (quality) => {
-        const currentCard = cards[currentIndex];
+    Alert.alert('오늘 학습 완료', `${cards.length}장의 카드를 모두 확인했어요.`, [
+      { text: '마치기', onPress: () => navigation.goBack() },
+    ]);
+  };
 
-        await gradeCard(deckId, currentCard.id, quality);
-
-        Animated.timing(animatedValue, {toValue: 0, duration: 0, useNativeDriver: true}).start();
-        setIsFlipped(false);
-
-        if (currentIndex < cards.length - 1) {
-            setCurrentIndex(currentIndex + 1);
-        } else {
-            Alert.alert('학습 완료', '오늘의 학습을 마쳤습니다! 👏', [
-                {text: '확인', onPress: () => navigation.goBack()}
-            ]);
-        }
-    };
-
-    // 4. 데이터 로딩 중이거나 카드가 없을 때 처리
-    if (cards.length === 0) {
-        return (
-            <View style={styles.container}>
-                <Text>오늘 복습할 카드가 없습니다! 🎉</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20 }}>
-                    <Text style={{ color: colors.primary }}>돌아가기</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    };
-
-    // 현재 보여줄 카드
-    const currentCard = cards[currentIndex];
-
-    // 애니메이션 스타일
-    const frontInterpolate = animatedValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-    const backInterpolate = animatedValue.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
-    const frontAnimatedStyle = { transform: [{ rotateY: frontInterpolate }] };
-    const backAnimatedStyle = { transform: [{ rotateY: backInterpolate }] };
-
+  if (isLoading) {
     return (
-    <View style={styles.container}>
-      <Text style={styles.progress}>{currentIndex + 1} / {cards.length}</Text>
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator color={colors.primary} size="large" />
+        <Text style={styles.loadingText}>오늘의 카드를 준비하고 있어요</Text>
+      </SafeAreaView>
+    );
+  }
 
-      <TouchableWithoutFeedback onPress={handleFlip}>
-        <View style={styles.cardContainer}>
-          {/* 앞면: [중요] 변수명 frontText 확인 */}
-          <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
+  if (cards.length === 0) {
+    return (
+      <SafeAreaView style={styles.emptyScreen}>
+        <View style={styles.emptyHeader}>
+          <TouchableOpacity
+            accessibilityLabel="학습 화면 닫기"
+            accessibilityRole="button"
+            onPress={() => navigation.goBack()}
+            style={styles.closeButton}
+          >
+            <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.emptyBody}>
+          <EmptyState
+            icon="check-circle-outline"
+            title="오늘 복습은 모두 끝났어요"
+            description="다음 복습 일정이 생기면 이곳에서 다시 만날 수 있어요."
+            actionLabel="암기장으로 돌아가기"
+            onAction={() => navigation.goBack()}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const currentCard = cards[currentIndex];
+  const progress = ((currentIndex + 1) / cards.length) * 100;
+  const frontRotate = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+  const backRotate = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['180deg', '360deg'],
+  });
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            accessibilityLabel="학습 화면 닫기"
+            accessibilityRole="button"
+            onPress={() => navigation.goBack()}
+            style={styles.closeButton}
+          >
+            <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerCopy}>
+            <Text numberOfLines={1} style={styles.deckTitle}>
+              {deckTitle}
+            </Text>
+            <Text style={styles.progressCount}>
+              {currentIndex + 1} / {cards.length}
+            </Text>
+          </View>
+          <View style={styles.headerSpacer} />
+        </View>
+
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+        </View>
+
+        <View style={styles.promptRow}>
+          <Text style={styles.promptEyebrow}>{isFlipped ? 'ANSWER' : 'QUESTION'}</Text>
+          <Text style={styles.promptHint}>{isFlipped ? '기억과 비교해보세요' : '먼저 답을 떠올려보세요'}</Text>
+        </View>
+
+        <Pressable
+          accessibilityHint="카드의 앞면과 뒷면을 전환합니다"
+          accessibilityRole="button"
+          onPress={handleFlip}
+          style={styles.cardContainer}
+        >
+          <Animated.View
+            style={[
+              styles.card,
+              styles.frontCard,
+              { transform: [{ perspective: 1000 }, { rotateY: frontRotate }] },
+            ]}
+          >
+            <View style={styles.cardCorner} />
+            <Text style={styles.cardSideLabel}>앞면</Text>
             <Text style={styles.cardText}>{currentCard.frontText}</Text>
-            <Text style={styles.hint}>터치해서 정답 확인</Text>
-          </Animated.View>
-
-          {/* 뒷면: [중요] 변수명 backText 확인 */}
-          <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
-            <Text style={styles.cardText}>{currentCard.backText}</Text>
-            
-            {/* 평가 버튼 (서버로 보낼 점수 매핑) */}
-            <View style={styles.buttonRow}>
-                {/* Again(1점): 다시 보기 (서버 로직에 따라 처리됨)
-                   Hard(3점): 어려움 
-                   Good(4점): 알맞음
-                   Easy(5점): 쉬움
-                */}
-                <TouchableOpacity style={[styles.btn, styles.btnAgain]} onPress={() => handleRate(1)}>
-                    <Text style={styles.btnText}>몰라요</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnHard]} onPress={() => handleRate(3)}>
-                    <Text style={styles.btnText}>어려움</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnGood]} onPress={() => handleRate(4)}>
-                    <Text style={styles.btnText}>알맞음</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.btn, styles.btnEasy]} onPress={() => handleRate(5)}>
-                    <Text style={styles.btnText}>쉬움</Text>
-                </TouchableOpacity>
+            <View style={styles.flipHint}>
+              <MaterialCommunityIcons name="gesture-tap" size={18} color={colors.subText} />
+              <Text style={styles.flipHintText}>눌러서 답 확인</Text>
             </View>
           </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.card,
+              styles.backCard,
+              { transform: [{ perspective: 1000 }, { rotateY: backRotate }] },
+            ]}
+          >
+            <View style={[styles.cardCorner, styles.answerCorner]} />
+            <Text style={[styles.cardSideLabel, styles.answerLabel]}>뒷면</Text>
+            <Text style={styles.cardText}>{currentCard.backText}</Text>
+            <View style={styles.flipHint}>
+              <MaterialCommunityIcons name="rotate-3d-variant" size={18} color={colors.subText} />
+              <Text style={styles.flipHintText}>눌러서 질문 보기</Text>
+            </View>
+          </Animated.View>
+        </Pressable>
+
+        <View style={styles.ratingArea}>
+          {isFlipped ? (
+            <>
+              <Text style={styles.ratingTitle}>얼마나 잘 기억했나요?</Text>
+              <View style={styles.ratingGrid}>
+                {ratingOptions.map((option) => (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    activeOpacity={0.78}
+                    disabled={isSubmitting}
+                    key={option.quality}
+                    onPress={() => handleRate(option.quality)}
+                    style={[styles.ratingButton, { backgroundColor: option.color }]}
+                  >
+                    <Text style={[styles.ratingLabel, { color: option.textColor }]}>{option.label}</Text>
+                    <Text style={[styles.ratingCaption, { color: option.textColor }]}>{option.caption}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : (
+            <View style={styles.recallNote}>
+              <MaterialCommunityIcons name="lightbulb-outline" size={20} color={colors.warning} />
+              <Text style={styles.recallText}>소리 내어 답한 뒤 카드를 뒤집으면 더 오래 기억할 수 있어요.</Text>
+            </View>
+          )}
         </View>
-      </TouchableWithoutFeedback>
-    </View>
+      </View>
+      {isSubmitting && (
+        <View style={styles.submittingOverlay}>
+          <ActivityIndicator color={colors.surface} />
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
-const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  progress: { position: 'absolute', top: 50, fontSize: 18, fontWeight: 'bold' },
-  cardContainer: { width: width * 0.85, height: 400, alignItems: 'center', justifyContent: 'center' },
-  card: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'white', borderRadius: 20, alignItems: 'center', justifyContent: 'center', backfaceVisibility: 'hidden', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-  cardFront: { backgroundColor: 'white' },
-  cardBack: { backgroundColor: '#F0F8FF' }, 
-  cardText: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-  hint: { marginTop: 20, color: '#999', fontSize: 14 },
-  buttonRow: { flexDirection: 'row', position: 'absolute', bottom: 20, width: '90%', justifyContent: 'space-between' },
-  btn: { paddingVertical: 10, paddingHorizontal: 10, borderRadius: 8, minWidth: 60, alignItems: 'center' },
-  btnAgain: { backgroundColor: '#FF3B30' },
-  btnHard: { backgroundColor: '#FF9500' },
-  btnGood: { backgroundColor: '#34C759' },
-  btnEasy: { backgroundColor: '#007AFF' },
-  btnText: { color: 'white', fontWeight: 'bold', fontSize: 12 }
+  container: { flex: 1, backgroundColor: colors.background },
+  content: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 620,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.background,
+  },
+  loadingText: { ...type.body, color: colors.subText },
+  emptyScreen: { flex: 1, backgroundColor: colors.background },
+  emptyHeader: { height: 64, justifyContent: 'center', paddingHorizontal: spacing.xl },
+  emptyBody: { flex: 1, justifyContent: 'center' },
+  header: { height: 64, flexDirection: 'row', alignItems: 'center' },
+  closeButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+  },
+  headerCopy: { flex: 1, alignItems: 'center', paddingHorizontal: spacing.md },
+  deckTitle: { fontSize: 15, color: colors.text, fontWeight: '700' },
+  progressCount: { ...type.caption, color: colors.subText, fontVariant: ['tabular-nums'] },
+  headerSpacer: { width: 42 },
+  progressTrack: { height: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted },
+  progressFill: { height: 3, borderRadius: radius.pill, backgroundColor: colors.primary },
+  promptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
+  },
+  promptEyebrow: { ...type.eyebrow, color: colors.primary },
+  promptHint: { ...type.caption, color: colors.subText },
+  cardContainer: { flex: 1, minHeight: 300, maxHeight: 430 },
+  card: {
+    ...StyleSheet.absoluteFillObject,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    backfaceVisibility: 'hidden',
+    ...shadow.card,
+  },
+  frontCard: { backgroundColor: colors.surface },
+  backCard: { backgroundColor: '#F8F3E8' },
+  cardCorner: {
+    position: 'absolute',
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    right: -24,
+    top: -24,
+  },
+  answerCorner: { backgroundColor: colors.accentSoft },
+  cardSideLabel: {
+    position: 'absolute',
+    top: spacing.xxl,
+    left: spacing.xxl,
+    ...type.eyebrow,
+    color: colors.primary,
+  },
+  answerLabel: { color: colors.warning },
+  cardText: {
+    maxWidth: '92%',
+    color: colors.text,
+    fontSize: 27,
+    lineHeight: 39,
+    fontWeight: '700',
+    letterSpacing: -0.45,
+    textAlign: 'center',
+  },
+  flipHint: {
+    position: 'absolute',
+    bottom: spacing.xxl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  flipHintText: { ...type.caption, color: colors.subText },
+  ratingArea: { minHeight: 178, paddingTop: spacing.xl },
+  ratingTitle: { fontSize: 15, color: colors.text, fontWeight: '700', marginBottom: spacing.md },
+  ratingGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
+  ratingButton: {
+    width: '49%',
+    minHeight: 58,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+    borderRadius: radius.md,
+  },
+  ratingLabel: { fontSize: 14, fontWeight: '800' },
+  ratingCaption: { fontSize: 11, marginTop: 2, opacity: 0.86 },
+  recallNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+  },
+  recallText: { flex: 1, ...type.caption, color: colors.text },
+  submittingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(32, 35, 31, 0.18)',
+  },
 });

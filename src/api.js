@@ -1,4 +1,8 @@
-const BASE_URL = "http://{computer IP}:8080/api";
+import { Platform } from 'react-native';
+
+const defaultHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+const BASE_URL = configuredUrl || `http://${defaultHost}:8080/api`;
 
 // 덱 생성하기
 export const createDeck = async (title) => {
@@ -10,6 +14,7 @@ export const createDeck = async (title) => {
             },
             body: JSON.stringify({title: title}),
         });
+        if (!response.ok) throw new Error('암기장 생성 요청에 실패했습니다.');
         return await response.text();
     } catch (error) {
         console.error("서버 연결 실패:", error);
@@ -35,6 +40,7 @@ export const deleteDeck = async (deckId) => {
         const response = await fetch(`${BASE_URL}/decks/${deckId}`, {
             method: 'DELETE',
         });
+        if (!response.ok) throw new Error('암기장 삭제 요청에 실패했습니다.');
         return await response.text();
     } catch (error) {
         console.error("덱 삭제 실패:", error);
@@ -100,6 +106,7 @@ export const gradeCard = async (deckId, cardId, quality) => {
             },
             body: JSON.stringify({quality: quality}),
         });
+        if (!response.ok) throw new Error('학습 기록 저장 요청에 실패했습니다.');
         return await response.text();
     } catch (error) {
         console.error("채점 실패:",error);

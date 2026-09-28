@@ -1,39 +1,70 @@
-import React from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { NavigationContainer } from "@react-navigation/native";
-import DeckStackNavigator from "./DeckStackNavigator";
-
-import HomeScreen from "../screens/HomeScreen";
-import DeckScreen from "../screens/DeckScreen";
-import StatsScreen from "../screens/StatsScreen";
+import React from 'react';
+import { Platform, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import DeckStackNavigator from './DeckStackNavigator';
+import HomeScreen from '../screens/HomeScreen';
+import StatsScreen from '../screens/StatsScreen';
+import { colors } from '../theme/color';
 
 const Tab = createBottomTabNavigator();
 
+const appTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.primary,
+    background: colors.background,
+    card: colors.surface,
+    text: colors.text,
+    border: colors.border,
+    notification: colors.accent,
+  },
+};
+
+const iconNames = {
+  Home: ['home-variant-outline', 'home-variant'],
+  Decks: ['cards-outline', 'cards'],
+  Stats: ['chart-box-outline', 'chart-box'],
+};
+
 export default function AppNavigator() {
-    return (
-        <NavigationContainer>
-            <Tab.Navigator
-            screenOptions={{
-                tabBarActiveTintColor: '#007AFF', // 활성화된 탭 색상
-                tabBarInactiveBackgroundColor: '#99A1AF',
-                headerShown: false,
-            }}>
-                <Tab.Screen 
-                name="Home"
-                component={HomeScreen}
-                options={{title: '홈'}}
-                />
-                <Tab.Screen 
-                name="Decks"
-                component={DeckStackNavigator}
-                options={{title: '덱', headerShown: false}}
-                />
-                <Tab.Screen 
-                name="Stats"
-                component={StatsScreen}
-                options={{title: '통계'}}
-                />
-            </Tab.Navigator>
-        </NavigationContainer>
-    );
+  return (
+    <NavigationContainer theme={appTheme}>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.muted,
+          tabBarHideOnKeyboard: true,
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '700',
+          },
+          tabBarStyle: {
+            height: Platform.OS === 'ios' ? 84 : 70,
+            paddingTop: 8,
+            paddingBottom: Platform.OS === 'ios' ? 22 : 10,
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          tabBarIcon: ({ color, size, focused }) => (
+            <MaterialCommunityIcons
+              color={color}
+              name={iconNames[route.name][focused ? 1 : 0]}
+              size={size + 1}
+            />
+          ),
+        })}
+      >
+        <Tab.Screen name="Home" component={HomeScreen} options={{ title: '홈' }} />
+        <Tab.Screen name="Decks" component={DeckStackNavigator} options={{ title: '암기장' }} />
+        <Tab.Screen name="Stats" component={StatsScreen} options={{ title: '기록' }} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
 }
