@@ -4,6 +4,7 @@ import {
   Alert,
   Animated,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -93,7 +94,13 @@ export default function StudyScreen({ route, navigation }) {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView
+        accessibilityLabel="오늘의 카드 준비 중"
+        accessibilityLiveRegion="polite"
+        accessibilityRole="progressbar"
+        accessibilityState={{ busy: true }}
+        style={styles.centered}
+      >
         <ActivityIndicator color={colors.primary} size="large" />
         <Text style={styles.loadingText}>오늘의 카드를 준비하고 있어요</Text>
       </SafeAreaView>
@@ -170,7 +177,7 @@ export default function StudyScreen({ route, navigation }) {
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerCopy}>
-            <Text numberOfLines={1} style={styles.deckTitle}>
+            <Text accessibilityRole="header" numberOfLines={1} style={styles.deckTitle}>
               {deckTitle}
             </Text>
             <Text style={styles.progressCount}>
@@ -180,7 +187,17 @@ export default function StudyScreen({ route, navigation }) {
           <View style={styles.headerSpacer} />
         </View>
 
-        <View style={styles.progressTrack}>
+        <View
+          accessibilityLabel="학습 진행률"
+          accessibilityRole="progressbar"
+          accessibilityValue={{
+            min: 0,
+            max: cards.length,
+            now: currentIndex + 1,
+            text: `${currentIndex + 1} / ${cards.length}`,
+          }}
+          style={styles.progressTrack}
+        >
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
 
@@ -190,12 +207,19 @@ export default function StudyScreen({ route, navigation }) {
         </View>
 
         <Pressable
-          accessibilityHint="카드의 앞면과 뒷면을 전환합니다"
+          accessibilityHint={isFlipped ? '두 번 눌러 질문을 봅니다' : '두 번 눌러 답을 확인합니다'}
+          accessibilityLabel={`${isFlipped ? '답' : '질문'}: ${
+            isFlipped ? currentCard.backText : currentCard.frontText
+          }`}
           accessibilityRole="button"
+          accessibilityState={{ disabled: isSubmitting }}
+          disabled={isSubmitting}
           onPress={handleFlip}
           style={styles.cardContainer}
         >
           <Animated.View
+            accessibilityElementsHidden={isFlipped}
+            importantForAccessibility={isFlipped ? 'no-hide-descendants' : 'yes'}
             style={[
               styles.card,
               styles.frontCard,
@@ -204,7 +228,14 @@ export default function StudyScreen({ route, navigation }) {
           >
             <View style={styles.cardCorner} />
             <Text style={styles.cardSideLabel}>앞면</Text>
-            <Text style={styles.cardText}>{currentCard.frontText}</Text>
+            <ScrollView
+              contentContainerStyle={styles.cardScrollContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+              style={styles.cardScroll}
+            >
+              <Text style={styles.cardText}>{currentCard.frontText}</Text>
+            </ScrollView>
             <View style={styles.flipHint}>
               <MaterialCommunityIcons name="gesture-tap" size={18} color={colors.subText} />
               <Text style={styles.flipHintText}>눌러서 답 확인</Text>
@@ -212,6 +243,8 @@ export default function StudyScreen({ route, navigation }) {
           </Animated.View>
 
           <Animated.View
+            accessibilityElementsHidden={!isFlipped}
+            importantForAccessibility={!isFlipped ? 'no-hide-descendants' : 'yes'}
             style={[
               styles.card,
               styles.backCard,
@@ -220,7 +253,14 @@ export default function StudyScreen({ route, navigation }) {
           >
             <View style={[styles.cardCorner, styles.answerCorner]} />
             <Text style={[styles.cardSideLabel, styles.answerLabel]}>뒷면</Text>
-            <Text style={styles.cardText}>{currentCard.backText}</Text>
+            <ScrollView
+              contentContainerStyle={styles.cardScrollContent}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+              style={styles.cardScroll}
+            >
+              <Text style={styles.cardText}>{currentCard.backText}</Text>
+            </ScrollView>
             <View style={styles.flipHint}>
               <MaterialCommunityIcons name="rotate-3d-variant" size={18} color={colors.subText} />
               <Text style={styles.flipHintText}>눌러서 질문 보기</Text>
@@ -235,7 +275,9 @@ export default function StudyScreen({ route, navigation }) {
               <View style={styles.ratingGrid}>
                 {ratingOptions.map((option) => (
                   <TouchableOpacity
+                    accessibilityLabel={`${option.label}, ${option.caption}`}
                     accessibilityRole="button"
+                    accessibilityState={{ busy: isSubmitting, disabled: isSubmitting }}
                     activeOpacity={0.78}
                     disabled={isSubmitting}
                     key={option.quality}
@@ -257,7 +299,11 @@ export default function StudyScreen({ route, navigation }) {
         </View>
       </View>
       {isSubmitting && (
-        <View style={styles.submittingOverlay}>
+        <View
+          accessibilityLabel="학습 기록 저장 중"
+          accessibilityLiveRegion="polite"
+          style={styles.submittingOverlay}
+        >
           <ActivityIndicator color={colors.surface} />
         </View>
       )}
@@ -287,8 +333,8 @@ const styles = StyleSheet.create({
   emptyBody: { flex: 1, justifyContent: 'center' },
   header: { height: 64, flexDirection: 'row', alignItems: 'center' },
   closeButton: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -299,7 +345,7 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1, alignItems: 'center', paddingHorizontal: spacing.md },
   deckTitle: { fontSize: 15, color: colors.text, fontWeight: '700' },
   progressCount: { ...type.caption, color: colors.subText, fontVariant: ['tabular-nums'] },
-  headerSpacer: { width: 42 },
+  headerSpacer: { width: 44 },
   progressTrack: { height: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted },
   progressFill: { height: 3, borderRadius: radius.pill, backgroundColor: colors.primary },
   promptRow: {
@@ -311,7 +357,7 @@ const styles = StyleSheet.create({
   },
   promptEyebrow: { ...type.eyebrow, color: colors.primary },
   promptHint: { ...type.caption, color: colors.subText },
-  cardContainer: { flex: 1, minHeight: 300, maxHeight: 430 },
+  cardContainer: { flex: 1, minHeight: 240, maxHeight: 430 },
   card: {
     ...StyleSheet.absoluteFillObject,
     padding: spacing.xxl,
@@ -345,6 +391,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   answerLabel: { color: colors.warning },
+  cardScroll: { width: '100%', marginVertical: 48 },
+  cardScrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
   cardText: {
     maxWidth: '92%',
     color: colors.text,
@@ -367,7 +420,7 @@ const styles = StyleSheet.create({
   ratingGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
   ratingButton: {
     width: '49%',
-    minHeight: 58,
+    minHeight: 64,
     paddingHorizontal: spacing.md,
     justifyContent: 'center',
     borderRadius: radius.md,

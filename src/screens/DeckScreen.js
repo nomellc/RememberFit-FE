@@ -28,11 +28,13 @@ export default function DeckScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [deletingDeckId, setDeletingDeckId] = useState(null);
   const [editingDeck, setEditingDeck] = useState(null);
   const [editDeckTitle, setEditDeckTitle] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const createLockRef = useRef(false);
+  const deleteLockRef = useRef(false);
   const renameLockRef = useRef(false);
 
   const loadDecks = async ({ refreshing = false } = {}) => {
@@ -119,11 +121,17 @@ export default function DeckScreen({ navigation }) {
           text: '삭제',
           style: 'destructive',
           onPress: async () => {
+            if (deleteLockRef.current) return;
+            deleteLockRef.current = true;
+            setDeletingDeckId(deck.id);
             try {
               await deleteDeck(deck.id);
-              await loadDecks();
+              setDecks((current) => current.filter((item) => item.id !== deck.id));
             } catch (error) {
               Alert.alert('삭제하지 못했어요', error.message);
+            } finally {
+              deleteLockRef.current = false;
+              setDeletingDeckId(null);
             }
           },
         },
@@ -140,7 +148,7 @@ export default function DeckScreen({ navigation }) {
 
       <View style={styles.heading}>
         <Text style={styles.eyebrow}>MY COLLECTION</Text>
-        <Text style={styles.title}>나의 암기장</Text>
+        <Text accessibilityRole="header" style={styles.title}>나의 암기장</Text>
         <Text style={styles.subtitle}>주제별로 카드를 모으고, 필요한 순간 다시 꺼내보세요.</Text>
       </View>
 
@@ -163,6 +171,10 @@ export default function DeckScreen({ navigation }) {
           <TouchableOpacity
             accessibilityLabel="암기장 추가"
             accessibilityRole="button"
+            accessibilityState={{
+              busy: isAdding,
+              disabled: !newDeckTitle.trim() || isAdding,
+            }}
             activeOpacity={0.8}
             disabled={!newDeckTitle.trim() || isAdding}
             onPress={handleAddDeck}
@@ -181,7 +193,7 @@ export default function DeckScreen({ navigation }) {
       </View>
 
       <View style={styles.listHeading}>
-        <Text style={styles.listTitle}>전체 암기장</Text>
+        <Text accessibilityRole="header" style={styles.listTitle}>전체 암기장</Text>
         <Text style={styles.listCount}>{decks.length}</Text>
       </View>
       {!!loadError && decks.length > 0 && (
@@ -193,6 +205,7 @@ export default function DeckScreen({ navigation }) {
   const renderItem = ({ item, index }) => (
     <View style={styles.deckItem}>
       <TouchableOpacity
+        accessibilityLabel={`${item.title}, 카드 ${item.cardCount || 0}장`}
         accessibilityHint="카드 목록을 엽니다"
         accessibilityRole="button"
         activeOpacity={0.7}
@@ -225,11 +238,20 @@ export default function DeckScreen({ navigation }) {
         <TouchableOpacity
           accessibilityLabel={`${item.title} 암기장 삭제`}
           accessibilityRole="button"
+          accessibilityState={{
+            busy: deletingDeckId === item.id,
+            disabled: deletingDeckId === item.id,
+          }}
+          disabled={deletingDeckId === item.id}
           hitSlop={6}
           onPress={() => handleDelete(item)}
           style={styles.iconButton}
         >
-          <MaterialCommunityIcons name="trash-can-outline" size={19} color={colors.danger} />
+          {deletingDeckId === item.id ? (
+            <ActivityIndicator color={colors.danger} size="small" />
+          ) : (
+            <MaterialCommunityIcons name="trash-can-outline" size={19} color={colors.danger} />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -242,8 +264,10 @@ export default function DeckScreen({ navigation }) {
         style={styles.safeArea}
       >
         <FlatList
+          accessibilityState={{ busy: isLoading || isRefreshing }}
           contentContainerStyle={styles.content}
           data={decks}
+          initialNumToRender={8}
           keyExtractor={(item) => item.id.toString()}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
@@ -260,6 +284,8 @@ export default function DeckScreen({ navigation }) {
             )
           }
           ListHeaderComponent={renderHeader}
+          maxToRenderPerBatch={8}
+          removeClippedSubviews={Platform.OS === 'android'}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -269,6 +295,8 @@ export default function DeckScreen({ navigation }) {
           }
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
+          updateCellsBatchingPeriod={40}
+          windowSize={7}
         />
         <TextEditModal
           isSaving={isRenaming}
@@ -379,8 +407,8 @@ const styles = StyleSheet.create({
   deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
   itemActions: { flexDirection: 'row', alignItems: 'center', marginLeft: spacing.xs },
   iconButton: {
-    width: 38,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,

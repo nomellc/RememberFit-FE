@@ -21,7 +21,11 @@ const EMPTY_STATS = { newCount: 0, reviewCount: 0, doneCount: 0 };
 
 function StatItem({ value, label, tone, last }) {
   return (
-    <View style={[styles.statItem, !last && styles.statDivider]}>
+    <View
+      accessible
+      accessibilityLabel={`${label} ${value}장`}
+      style={[styles.statItem, !last && styles.statDivider]}
+    >
       <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -91,11 +95,19 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.intro}>
           <Text style={styles.date}>{todayLabel}</Text>
-          <Text style={styles.title}>오늘의 기억을{`\n`}가볍게 이어가요.</Text>
+          <Text accessibilityRole="header" style={styles.title}>
+            오늘의 기억을{`\n`}가볍게 이어가요.
+          </Text>
         </View>
 
         {isLoading ? (
-          <View style={styles.loadingBox}>
+          <View
+            accessibilityLabel="학습 현황 불러오는 중"
+            accessibilityLiveRegion="polite"
+            accessibilityRole="progressbar"
+            accessibilityState={{ busy: true }}
+            style={styles.loadingBox}
+          >
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.loadingText}>학습 현황을 정리하고 있어요</Text>
           </View>
@@ -112,6 +124,7 @@ export default function HomeScreen({ navigation }) {
         {!loadError && (
           <>
             <TouchableOpacity
+              accessibilityLabel="오늘 학습 시작하기"
               accessibilityRole="button"
               activeOpacity={0.88}
               style={styles.studyCard}
@@ -135,10 +148,15 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.sectionHeader}>
               <View>
                 <Text style={styles.sectionEyebrow}>RECENT</Text>
-                <Text style={styles.sectionTitle}>최근 암기장</Text>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>최근 암기장</Text>
               </View>
               {recentDecks.length > 0 && (
-                <TouchableOpacity onPress={() => navigation.navigate('Decks')}>
+                <TouchableOpacity
+                  accessibilityLabel="전체 암기장 보기"
+                  accessibilityRole="button"
+                  onPress={() => navigation.navigate('Decks')}
+                  style={styles.allLinkButton}
+                >
                   <Text style={styles.allLink}>전체 보기</Text>
                 </TouchableOpacity>
               )}
@@ -156,6 +174,8 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.deckList}>
                 {recentDecks.map((deck, index) => (
                   <TouchableOpacity
+                    accessibilityLabel={`${deck.title}, 카드 ${deck.cardCount || 0}장`}
+                    accessibilityHint="카드 목록을 엽니다"
                     accessibilityRole="button"
                     activeOpacity={0.75}
                     key={deck.id}
@@ -215,7 +235,8 @@ const styles = StyleSheet.create({
   },
   loadingText: { ...type.caption, color: colors.subText },
   statsStrip: {
-    height: 92,
+    minHeight: 92,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -270,6 +291,7 @@ const styles = StyleSheet.create({
   sectionEyebrow: { ...type.eyebrow, color: colors.muted, marginBottom: 3 },
   sectionTitle: { ...type.section, color: colors.text },
   allLink: { ...type.caption, color: colors.primary, fontWeight: '700', paddingVertical: spacing.xs },
+  allLinkButton: { minHeight: 44, justifyContent: 'center' },
   deckList: { borderTopWidth: 1, borderTopColor: colors.text },
   deckRow: {
     minHeight: 76,

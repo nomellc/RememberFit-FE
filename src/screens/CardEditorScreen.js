@@ -66,7 +66,9 @@ export default function CardEditorScreen({ route, navigation }) {
       >
         <View style={styles.heading}>
           <Text style={styles.eyebrow}>{isEditing ? 'EDIT FLASH CARD' : 'NEW FLASH CARD'}</Text>
-          <Text style={styles.title}>{isEditing ? '카드를 다듬어볼까요?' : '무엇을 기억할까요?'}</Text>
+          <Text accessibilityRole="header" style={styles.title}>
+            {isEditing ? '카드를 다듬어볼까요?' : '무엇을 기억할까요?'}
+          </Text>
           <Text style={styles.subtitle}>
             {isEditing
               ? '바뀐 내용을 확인한 뒤 저장하면 학습 일정은 그대로 유지돼요.'
@@ -126,7 +128,9 @@ export default function CardEditorScreen({ route, navigation }) {
 
       <View style={styles.footer}>
         <TouchableOpacity
+          accessibilityLabel={isEditing ? '수정 내용 저장' : '카드 저장하기'}
           accessibilityRole="button"
+          accessibilityState={{ busy: isSaving, disabled: !canSave }}
           activeOpacity={0.85}
           disabled={!canSave}
           onPress={handleSave}

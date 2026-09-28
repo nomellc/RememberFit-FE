@@ -16,10 +16,11 @@ export default function EmptyState({
       <View style={styles.iconWrap}>
         <MaterialCommunityIcons name={icon} size={28} color={colors.primary} />
       </View>
-      <Text style={styles.title}>{title}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{title}</Text>
       {!!description && <Text style={styles.description}>{description}</Text>}
       {!!actionLabel && !!onAction && (
         <TouchableOpacity
+          accessibilityLabel={actionLabel}
           accessibilityRole="button"
           activeOpacity={0.8}
           onPress={onAction}

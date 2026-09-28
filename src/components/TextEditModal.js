@@ -49,13 +49,15 @@ export default function TextEditModal({
       >
         <Pressable
           accessibilityLabel="편집 창 닫기"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isSaving }}
           disabled={isSaving}
           onPress={onCancel}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.sheet}>
+        <View accessibilityViewIsModal style={styles.sheet}>
           <Text style={styles.eyebrow}>EDIT</Text>
-          <Text style={styles.title}>{title}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.label}>{label}</Text>
           <TextInput
             accessibilityLabel={label}
@@ -72,7 +74,9 @@ export default function TextEditModal({
           />
           <View style={styles.actions}>
             <TouchableOpacity
+              accessibilityLabel="편집 취소"
               accessibilityRole="button"
+              accessibilityState={{ disabled: isSaving }}
               disabled={isSaving}
               onPress={onCancel}
               style={styles.cancelButton}
@@ -80,8 +84,10 @@ export default function TextEditModal({
               <Text style={styles.cancelText}>취소</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              accessibilityLabel="변경 내용 저장"
               accessibilityRole="button"
               activeOpacity={0.8}
+              accessibilityState={{ busy: isSaving, disabled: !canSubmit }}
               disabled={!canSubmit}
               onPress={onSubmit}
               style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
@@ -129,7 +135,7 @@ const styles = StyleSheet.create({
   },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.xl },
   cancelButton: {
-    height: 46,
+    minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
@@ -137,7 +143,7 @@ const styles = StyleSheet.create({
   cancelText: { color: colors.subText, fontSize: 15, fontWeight: '700' },
   submitButton: {
     minWidth: 84,
-    height: 46,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,

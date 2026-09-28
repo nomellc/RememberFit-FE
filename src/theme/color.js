@@ -5,8 +5,8 @@ export const colors = {
   white: '#FFFFFF',
 
   text: '#20231F',
-  subText: '#6D7068',
-  muted: '#94968E',
+  subText: '#5F635B',
+  muted: '#696C64',
   border: '#D9D4C8',
 
   primary: '#315C4C',
@@ -15,11 +15,11 @@ export const colors = {
   accent: '#D39B44',
   accentSoft: '#F2E3C7',
 
-  success: '#49745F',
+  success: '#3F674F',
   successSoft: '#DDE9E1',
-  warning: '#A56E2D',
+  warning: '#81531E',
   warningSoft: '#F3E5CF',
-  danger: '#B85C4E',
+  danger: '#96453B',
   dangerSoft: '#F3DFDB',
 };
 

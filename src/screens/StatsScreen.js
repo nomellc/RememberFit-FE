@@ -32,7 +32,11 @@ const qualityRows = [
 
 function MetricRow({ icon, label, value, caption, color, last }) {
   return (
-    <View style={[styles.metricRow, !last && styles.metricBorder]}>
+    <View
+      accessible
+      accessibilityLabel={`${label} ${value}장. ${caption}`}
+      style={[styles.metricRow, !last && styles.metricBorder]}
+    >
       <View style={[styles.metricIcon, { backgroundColor: color.background }]}>
         <MaterialCommunityIcons name={icon} size={21} color={color.foreground} />
       </View>
@@ -48,7 +52,11 @@ function MetricRow({ icon, label, value, caption, color, last }) {
 function DistributionRow({ label, count, total, color }) {
   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
-    <View style={styles.distributionRow}>
+    <View
+      accessible
+      accessibilityLabel={`${label} ${count}회, 전체의 ${percentage}%`}
+      style={styles.distributionRow}
+    >
       <View style={styles.distributionCopy}>
         <View style={[styles.distributionDot, { backgroundColor: color }]} />
         <Text style={styles.distributionLabel}>{label}</Text>
@@ -118,6 +126,15 @@ export default function StatsScreen() {
     []
   );
 
+  const weeklyAccessibilityLabel = useMemo(() => {
+    const dailyCounts = insights.weeklyActivity
+      .map((item) => `${weekdayFormatter.format(new Date(`${item.date}T00:00:00`))}요일 ${item.count}회`)
+      .join(', ');
+    return `누적 학습 ${insights.totalStudyCount || 0}회. 최근 7일 학습 기록. ${
+      dailyCounts || '학습 기록 없음'
+    }`;
+  }, [insights.totalStudyCount, insights.weeklyActivity, weekdayFormatter]);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView
@@ -138,12 +155,18 @@ export default function StatsScreen() {
 
         <View style={styles.heading}>
           <Text style={styles.eyebrow}>LEARNING RECORD</Text>
-          <Text style={styles.title}>나의 학습 기록</Text>
+          <Text accessibilityRole="header" style={styles.title}>나의 학습 기록</Text>
           <Text style={styles.subtitle}>쌓인 카드와 오늘의 복습 상태를 한눈에 확인하세요.</Text>
         </View>
 
         {isLoading ? (
-          <View style={styles.loadingBox}>
+          <View
+            accessibilityLabel="학습 기록 불러오는 중"
+            accessibilityLiveRegion="polite"
+            accessibilityRole="progressbar"
+            accessibilityState={{ busy: true }}
+            style={styles.loadingBox}
+          >
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.loadingText}>학습 기록을 불러오고 있어요</Text>
           </View>
@@ -170,7 +193,12 @@ export default function StatsScreen() {
                 <Text style={styles.progressLabel}>기억 완료율</Text>
                 <Text style={styles.progressValue}>{completionRate}%</Text>
               </View>
-              <View style={styles.progressTrack}>
+              <View
+                accessibilityLabel="기억 완료율"
+                accessibilityRole="progressbar"
+                accessibilityValue={{ min: 0, max: 100, now: completionRate, text: `${completionRate}%` }}
+                style={styles.progressTrack}
+              >
                 <View style={[styles.progressFill, { width: `${completionRate}%` }]} />
               </View>
               <Text style={styles.progressCaption}>3회 이상 기억해 낸 카드를 기준으로 계산해요.</Text>
@@ -178,16 +206,16 @@ export default function StatsScreen() {
 
             <View style={styles.sectionHeading}>
               <View>
-                <Text style={styles.sectionTitle}>최근 7일 학습</Text>
+                <Text accessibilityRole="header" style={styles.sectionTitle}>최근 7일 학습</Text>
                 <Text style={styles.sectionSubCaption}>평가를 완료한 카드 수</Text>
               </View>
-              <View style={styles.streakBadge}>
+              <View accessible accessibilityLabel={`${insights.streakDays || 0}일 연속 학습`} style={styles.streakBadge}>
                 <MaterialCommunityIcons name="fire" size={16} color={colors.warning} />
                 <Text style={styles.streakText}>{insights.streakDays || 0}일 연속</Text>
               </View>
             </View>
 
-            <View style={styles.activityCard}>
+            <View accessible accessibilityLabel={weeklyAccessibilityLabel} style={styles.activityCard}>
               <View style={styles.activitySummary}>
                 <Text style={styles.activityTotal}>{insights.totalStudyCount || 0}</Text>
                 <Text style={styles.activityUnit}>누적 학습</Text>
@@ -212,7 +240,7 @@ export default function StatsScreen() {
             </View>
 
             <View style={styles.sectionHeading}>
-              <Text style={styles.sectionTitle}>평가 분포</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>평가 분포</Text>
               <Text style={styles.sectionCaption}>전체 학습</Text>
             </View>
 
@@ -229,7 +257,7 @@ export default function StatsScreen() {
             </View>
 
             <View style={styles.sectionHeading}>
-              <Text style={styles.sectionTitle}>현재 상태</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>현재 상태</Text>
               <Text style={styles.sectionCaption}>카드 수</Text>
             </View>
 

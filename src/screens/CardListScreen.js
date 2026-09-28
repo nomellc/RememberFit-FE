@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -17,6 +18,8 @@ import RequestErrorState from '../components/RequestErrorState';
 import { deleteCard, getCards } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
+const { filterCards } = require('../utils/cardSearch');
+
 export default function CardListScreen({ route, navigation }) {
   const { deckId, deckTitle } = route.params;
   const [cards, setCards] = useState([]);
@@ -28,11 +31,7 @@ export default function CardListScreen({ route, navigation }) {
   const deleteLockRef = useRef(false);
 
   const filteredCards = useMemo(() => {
-    const keyword = query.trim().toLocaleLowerCase('ko-KR');
-    if (!keyword) return cards;
-    return cards.filter((card) =>
-      `${card.frontText} ${card.backText}`.toLocaleLowerCase('ko-KR').includes(keyword)
-    );
+    return filterCards(cards, query);
   }, [cards, query]);
 
   const loadCards = async ({ refreshing = false } = {}) => {
@@ -94,6 +93,7 @@ export default function CardListScreen({ route, navigation }) {
         <TouchableOpacity
           accessibilityLabel="학습 시작"
           accessibilityRole="button"
+          accessibilityState={{ disabled: cards.length === 0 }}
           activeOpacity={0.75}
           disabled={cards.length === 0}
           onPress={() => navigation.navigate('Study', { deckId, deckTitle })}
@@ -109,7 +109,7 @@ export default function CardListScreen({ route, navigation }) {
   const renderHeader = () => (
     <View style={styles.heading}>
       <Text style={styles.eyebrow}>FLASH CARDS</Text>
-      <Text style={styles.title}>{deckTitle}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{deckTitle}</Text>
       <Text style={styles.subtitle}>카드 {cards.length}장 · 앞면을 떠올린 뒤 뒷면으로 확인하세요.</Text>
       {cards.length > 0 && (
         <View style={styles.searchBox}>
@@ -129,8 +129,8 @@ export default function CardListScreen({ route, navigation }) {
             <TouchableOpacity
               accessibilityLabel="검색어 지우기"
               accessibilityRole="button"
-              hitSlop={8}
               onPress={() => setQuery('')}
+              style={styles.clearButton}
             >
               <MaterialCommunityIcons name="close-circle" size={19} color={colors.muted} />
             </TouchableOpacity>
@@ -138,7 +138,9 @@ export default function CardListScreen({ route, navigation }) {
         </View>
       )}
       {!!query.trim() && (
-        <Text style={styles.searchResult}>{filteredCards.length}개의 카드를 찾았어요.</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.searchResult}>
+          {filteredCards.length}개의 카드를 찾았어요.
+        </Text>
       )}
       {!!loadError && cards.length > 0 && (
         <RequestErrorState error={loadError} onRetry={loadCards} compact />
@@ -155,7 +157,7 @@ export default function CardListScreen({ route, navigation }) {
             <Text style={styles.frontLabelText}>앞면</Text>
           </View>
           <TouchableOpacity
-            accessibilityLabel="카드 수정"
+            accessibilityLabel={`${item.frontText} 카드 수정`}
             accessibilityRole="button"
             hitSlop={6}
             onPress={() => goToEditCard(item)}
@@ -164,8 +166,12 @@ export default function CardListScreen({ route, navigation }) {
             <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity
-            accessibilityLabel="카드 삭제"
+            accessibilityLabel={`${item.frontText} 카드 삭제`}
             accessibilityRole="button"
+            accessibilityState={{
+              busy: deletingCardId === item.id,
+              disabled: deletingCardId === item.id,
+            }}
             disabled={deletingCardId === item.id}
             hitSlop={6}
             onPress={() => handleDelete(item)}
@@ -191,8 +197,10 @@ export default function CardListScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <FlatList
+        accessibilityState={{ busy: isLoading || isRefreshing }}
         contentContainerStyle={[styles.content, filteredCards.length === 0 && styles.emptyContent]}
         data={filteredCards}
+        initialNumToRender={8}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={
           isLoading ? (
@@ -218,6 +226,8 @@ export default function CardListScreen({ route, navigation }) {
           )
         }
         ListHeaderComponent={renderHeader}
+        maxToRenderPerBatch={8}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -227,6 +237,8 @@ export default function CardListScreen({ route, navigation }) {
         }
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
+        updateCellsBatchingPeriod={40}
+        windowSize={7}
       />
 
       {cards.length > 0 && (
@@ -272,9 +284,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   searchInput: { flex: 1, height: '100%', color: colors.text, fontSize: 15 },
+  clearButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -spacing.md,
+  },
   searchResult: { ...type.caption, color: colors.subText, marginTop: spacing.sm },
   headerAction: {
-    height: 34,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -304,8 +323,8 @@ const styles = StyleSheet.create({
   },
   frontLabelText: { fontSize: 11, color: colors.primary, fontWeight: '800' },
   iconButton: {
-    width: 34,
-    height: 34,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
