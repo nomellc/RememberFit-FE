@@ -17,6 +17,9 @@ export const createDeck = (title) =>
 
 export const getDecks = () => request('/decks');
 
+export const updateDeck = (deckId, title) =>
+  request(`/decks/${deckId}`, jsonOptions('PATCH', { title }));
+
 export const deleteDeck = (deckId) =>
   request(`/decks/${deckId}`, { method: 'DELETE' });
 
@@ -28,6 +31,15 @@ export const createCard = (deckId, frontText, backText) =>
     jsonOptions('POST', { frontText, backText })
   );
 
+export const updateCard = (deckId, cardId, frontText, backText) =>
+  request(
+    `/decks/${deckId}/cards/${cardId}`,
+    jsonOptions('PATCH', { frontText, backText })
+  );
+
+export const deleteCard = (deckId, cardId) =>
+  request(`/decks/${deckId}/cards/${cardId}`, { method: 'DELETE' });
+
 export const getDueCards = (deckId) =>
   request(`/decks/${deckId}/cards/due`);
 
@@ -37,4 +49,6 @@ export const gradeCard = (deckId, cardId, quality) =>
     jsonOptions('POST', { quality })
   );
 
-export const getHomeStats = () => request('/home/stats');
+export const getStudyStatistics = () => request('/statistics/summary');
+
+export const getStudyInsights = () => request('/statistics/insights');

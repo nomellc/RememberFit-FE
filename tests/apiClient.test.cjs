@@ -10,7 +10,11 @@ test.afterEach(() => {
 
 test('parses a successful JSON response', async () => {
   global.fetch = async () =>
-    new Response(JSON.stringify([{ id: 1, title: '영단어' }]), {
+    new Response(JSON.stringify({
+      success: true,
+      message: '암기장 목록을 불러왔어요.',
+      data: [{ id: 1, title: '영단어' }],
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -19,6 +23,19 @@ test('parses a successful JSON response', async () => {
   const result = await client.request('/decks');
 
   assert.deepEqual(result, [{ id: 1, title: '영단어' }]);
+});
+
+test('unwraps a successful response without data as null', async () => {
+  global.fetch = async () =>
+    new Response(JSON.stringify({ success: true, message: '삭제했어요.', data: null }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+  const client = createApiClient({ baseUrl: 'http://localhost/api', timeoutMs: 100 });
+  const result = await client.request('/decks/1', { method: 'DELETE' });
+
+  assert.equal(result, null);
 });
 
 test('keeps a legacy plain-text success response readable', async () => {

@@ -85,6 +85,15 @@ const createApiClient = ({ baseUrl, timeoutMs = 10000 }) => {
         });
       }
 
+      if (
+        data &&
+        typeof data === 'object' &&
+        data.success === true &&
+        Object.prototype.hasOwnProperty.call(data, 'data')
+      ) {
+        return data.data;
+      }
+
       return data;
     } catch (error) {
       if (error instanceof ApiError) throw error;
