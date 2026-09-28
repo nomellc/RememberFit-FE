@@ -12,10 +12,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
 import RequestErrorState from '../components/RequestErrorState';
-import { getDecks, getHomeStats } from '../api';
+import { getDecks, getStudyInsights, getStudyStatistics } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
 const EMPTY_STATS = { newCount: 0, reviewCount: 0, doneCount: 0 };
+const EMPTY_INSIGHTS = {
+  totalStudyCount: 0,
+  streakDays: 0,
+  weeklyActivity: [],
+  qualityDistribution: { againCount: 0, hardCount: 0, goodCount: 0, easyCount: 0 },
+};
+
+const qualityRows = [
+  { key: 'againCount', label: '다시', color: colors.danger },
+  { key: 'hardCount', label: '어려움', color: colors.warning },
+  { key: 'goodCount', label: '알맞음', color: colors.primary },
+  { key: 'easyCount', label: '쉬움', color: colors.success },
+];
 
 function MetricRow({ icon, label, value, caption, color, last }) {
   return (
@@ -32,8 +45,25 @@ function MetricRow({ icon, label, value, caption, color, last }) {
   );
 }
 
+function DistributionRow({ label, count, total, color }) {
+  const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+  return (
+    <View style={styles.distributionRow}>
+      <View style={styles.distributionCopy}>
+        <View style={[styles.distributionDot, { backgroundColor: color }]} />
+        <Text style={styles.distributionLabel}>{label}</Text>
+      </View>
+      <View style={styles.distributionTrack}>
+        <View style={[styles.distributionFill, { width: `${percentage}%`, backgroundColor: color }]} />
+      </View>
+      <Text style={styles.distributionValue}>{count}</Text>
+    </View>
+  );
+}
+
 export default function StatsScreen() {
   const [stats, setStats] = useState(EMPTY_STATS);
+  const [insights, setInsights] = useState(EMPTY_INSIGHTS);
   const [totalCards, setTotalCards] = useState(0);
   const [deckCount, setDeckCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,8 +74,13 @@ export default function StatsScreen() {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
     setLoadError(null);
     try {
-      const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
+      const [statData, insightData, decks] = await Promise.all([
+        getStudyStatistics(),
+        getStudyInsights(),
+        getDecks(),
+      ]);
       setStats(statData || EMPTY_STATS);
+      setInsights(insightData || EMPTY_INSIGHTS);
       setDeckCount(decks.length);
       setTotalCards(decks.reduce((sum, deck) => sum + (deck.cardCount || 0), 0));
     } catch (error) {
@@ -72,6 +107,16 @@ export default function StatsScreen() {
     if (stats.reviewCount > 0) return `오늘은 복습 카드 ${stats.reviewCount}장을 먼저 확인해보세요.`;
     return '오늘 예정된 복습을 마쳤어요. 새 카드를 천천히 추가해도 좋아요.';
   }, [stats.reviewCount, totalCards]);
+
+  const weeklyMaximum = useMemo(
+    () => Math.max(...insights.weeklyActivity.map((item) => item.count), 1),
+    [insights.weeklyActivity]
+  );
+
+  const weekdayFormatter = useMemo(
+    () => new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }),
+    []
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -129,6 +174,58 @@ export default function StatsScreen() {
                 <View style={[styles.progressFill, { width: `${completionRate}%` }]} />
               </View>
               <Text style={styles.progressCaption}>3회 이상 기억해 낸 카드를 기준으로 계산해요.</Text>
+            </View>
+
+            <View style={styles.sectionHeading}>
+              <View>
+                <Text style={styles.sectionTitle}>최근 7일 학습</Text>
+                <Text style={styles.sectionSubCaption}>평가를 완료한 카드 수</Text>
+              </View>
+              <View style={styles.streakBadge}>
+                <MaterialCommunityIcons name="fire" size={16} color={colors.warning} />
+                <Text style={styles.streakText}>{insights.streakDays || 0}일 연속</Text>
+              </View>
+            </View>
+
+            <View style={styles.activityCard}>
+              <View style={styles.activitySummary}>
+                <Text style={styles.activityTotal}>{insights.totalStudyCount || 0}</Text>
+                <Text style={styles.activityUnit}>누적 학습</Text>
+              </View>
+              <View style={styles.chart}>
+                {insights.weeklyActivity.map((item) => {
+                  const barHeight = item.count > 0 ? Math.max(10, (item.count / weeklyMaximum) * 72) : 4;
+                  return (
+                    <View key={item.date} style={styles.chartColumn}>
+                      <Text style={styles.chartValue}>{item.count || ''}</Text>
+                      <View style={[styles.chartBar, { height: barHeight }]} />
+                      <Text style={styles.chartLabel}>
+                        {weekdayFormatter.format(new Date(`${item.date}T00:00:00`))}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+              {insights.totalStudyCount === 0 && (
+                <Text style={styles.activityEmpty}>카드를 평가하면 주간 학습 흐름이 이곳에 쌓여요.</Text>
+              )}
+            </View>
+
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>평가 분포</Text>
+              <Text style={styles.sectionCaption}>전체 학습</Text>
+            </View>
+
+            <View style={styles.distributionCard}>
+              {qualityRows.map((item) => (
+                <DistributionRow
+                  color={item.color}
+                  count={insights.qualityDistribution[item.key] || 0}
+                  key={item.key}
+                  label={item.label}
+                  total={insights.totalStudyCount || 0}
+                />
+              ))}
             </View>
 
             <View style={styles.sectionHeading}>
@@ -245,6 +342,71 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { ...type.section, color: colors.text },
   sectionCaption: { ...type.caption, color: colors.muted },
+  sectionSubCaption: { ...type.caption, color: colors.subText, marginTop: 2 },
+  streakBadge: {
+    height: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: colors.warningSoft,
+  },
+  streakText: { color: colors.warning, fontSize: 12, fontWeight: '800' },
+  activityCard: {
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  activitySummary: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
+  activityTotal: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  activityUnit: { ...type.caption, color: colors.subText },
+  chart: {
+    height: 116,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: spacing.lg,
+  },
+  chartColumn: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  chartValue: { height: 18, color: colors.subText, fontSize: 10, fontWeight: '700' },
+  chartBar: {
+    width: 18,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primary,
+  },
+  chartLabel: { ...type.caption, color: colors.muted, marginTop: spacing.sm, fontSize: 11 },
+  activityEmpty: { ...type.caption, color: colors.subText, textAlign: 'center', marginTop: spacing.md },
+  distributionCard: {
+    gap: spacing.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+  distributionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  distributionCopy: { width: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  distributionDot: { width: 8, height: 8, borderRadius: radius.pill },
+  distributionLabel: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  distributionTrack: {
+    flex: 1,
+    height: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+  },
+  distributionFill: { height: '100%', borderRadius: radius.pill },
+  distributionValue: {
+    width: 30,
+    color: colors.subText,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
   metricList: {
     paddingHorizontal: spacing.lg,
     borderWidth: 1,

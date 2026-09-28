@@ -32,6 +32,7 @@ export default function StudyScreen({ route, navigation }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const submitLockRef = useRef(false);
 
   const loadStudyCards = async () => {
     setIsLoading(true);
@@ -64,8 +65,9 @@ export default function StudyScreen({ route, navigation }) {
   };
 
   const handleRate = async (quality) => {
-    if (isSubmitting) return;
+    if (submitLockRef.current) return;
     const currentCard = cards[currentIndex];
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       await gradeCard(deckId, currentCard.id, quality);
@@ -84,6 +86,7 @@ export default function StudyScreen({ route, navigation }) {
     } catch (error) {
       Alert.alert('학습 기록을 저장하지 못했어요', error.message);
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   };

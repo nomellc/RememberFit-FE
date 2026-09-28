@@ -14,7 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
 import EmptyState from '../components/EmptyState';
 import RequestErrorState from '../components/RequestErrorState';
-import { getDecks, getHomeStats } from '../api';
+import { getDecks, getStudyStatistics } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
 const EMPTY_STATS = { newCount: 0, reviewCount: 0, doneCount: 0 };
@@ -49,7 +49,7 @@ export default function HomeScreen({ navigation }) {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
     setLoadError(null);
     try {
-      const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
+      const [statData, decks] = await Promise.all([getStudyStatistics(), getDecks()]);
       setStats(statData || EMPTY_STATS);
       setRecentDecks(decks.slice(0, 3));
     } catch (error) {

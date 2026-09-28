@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +18,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
 import EmptyState from '../components/EmptyState';
 import RequestErrorState from '../components/RequestErrorState';
-import { createDeck, deleteDeck, getDecks } from '../api';
+import TextEditModal from '../components/TextEditModal';
+import { createDeck, deleteDeck, getDecks, updateDeck } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
 export default function DeckScreen({ navigation }) {
@@ -27,7 +28,12 @@ export default function DeckScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingDeck, setEditingDeck] = useState(null);
+  const [editDeckTitle, setEditDeckTitle] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const createLockRef = useRef(false);
+  const renameLockRef = useRef(false);
 
   const loadDecks = async ({ refreshing = false } = {}) => {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
@@ -51,8 +57,9 @@ export default function DeckScreen({ navigation }) {
 
   const handleAddDeck = async () => {
     const title = newDeckTitle.trim();
-    if (!title || isAdding) return;
+    if (!title || createLockRef.current) return;
 
+    createLockRef.current = true;
     setIsAdding(true);
     try {
       await createDeck(title);
@@ -61,14 +68,51 @@ export default function DeckScreen({ navigation }) {
     } catch (error) {
       Alert.alert('암기장을 만들지 못했어요', error.message);
     } finally {
+      createLockRef.current = false;
       setIsAdding(false);
+    }
+  };
+
+  const openRenameModal = (deck) => {
+    setEditingDeck(deck);
+    setEditDeckTitle(deck.title);
+  };
+
+  const closeRenameModal = () => {
+    if (renameLockRef.current) return;
+    setEditingDeck(null);
+    setEditDeckTitle('');
+  };
+
+  const handleRename = async () => {
+    const title = editDeckTitle.trim();
+    if (!editingDeck || !title || renameLockRef.current) return;
+    if (title === editingDeck.title) {
+      closeRenameModal();
+      return;
+    }
+
+    renameLockRef.current = true;
+    setIsRenaming(true);
+    try {
+      const updatedDeck = await updateDeck(editingDeck.id, title);
+      setDecks((current) =>
+        current.map((deck) => (deck.id === updatedDeck.id ? updatedDeck : deck))
+      );
+      setEditingDeck(null);
+      setEditDeckTitle('');
+    } catch (error) {
+      Alert.alert('이름을 바꾸지 못했어요', error.message);
+    } finally {
+      renameLockRef.current = false;
+      setIsRenaming(false);
     }
   };
 
   const handleDelete = (deck) => {
     Alert.alert(
       '암기장 삭제',
-      `‘${deck.title}’ 암기장과 안의 모든 카드를 삭제할까요?`,
+      `‘${deck.title}’ 암기장과 안의 모든 카드가 바로 삭제되며 복구할 수 없어요. 삭제할까요?`,
       [
         { text: '취소', style: 'cancel' },
         {
@@ -152,7 +196,6 @@ export default function DeckScreen({ navigation }) {
         accessibilityHint="카드 목록을 엽니다"
         accessibilityRole="button"
         activeOpacity={0.7}
-        onLongPress={() => handleDelete(item)}
         onPress={() =>
           navigation.navigate('CardList', { deckId: item.id, deckTitle: item.title })
         }
@@ -169,15 +212,26 @@ export default function DeckScreen({ navigation }) {
         </View>
         <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
       </TouchableOpacity>
-      <TouchableOpacity
-        accessibilityLabel={`${item.title} 암기장 삭제`}
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={() => handleDelete(item)}
-        style={styles.deleteButton}
-      >
-        <MaterialCommunityIcons name="trash-can-outline" size={19} color={colors.danger} />
-      </TouchableOpacity>
+      <View style={styles.itemActions}>
+        <TouchableOpacity
+          accessibilityLabel={`${item.title} 암기장 이름 수정`}
+          accessibilityRole="button"
+          hitSlop={6}
+          onPress={() => openRenameModal(item)}
+          style={styles.iconButton}
+        >
+          <MaterialCommunityIcons name="pencil-outline" size={19} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityLabel={`${item.title} 암기장 삭제`}
+          accessibilityRole="button"
+          hitSlop={6}
+          onPress={() => handleDelete(item)}
+          style={styles.iconButton}
+        >
+          <MaterialCommunityIcons name="trash-can-outline" size={19} color={colors.danger} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -215,6 +269,18 @@ export default function DeckScreen({ navigation }) {
           }
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
+        />
+        <TextEditModal
+          isSaving={isRenaming}
+          label="암기장 이름"
+          maxLength={40}
+          onCancel={closeRenameModal}
+          onChangeText={setEditDeckTitle}
+          onSubmit={handleRename}
+          placeholder="암기장 이름"
+          title="이름 바꾸기"
+          value={editDeckTitle}
+          visible={!!editingDeck}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -311,12 +377,12 @@ const styles = StyleSheet.create({
   deckCopy: { flex: 1, paddingHorizontal: spacing.md },
   deckTitle: { fontSize: 16, color: colors.text, fontWeight: '700' },
   deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
-  deleteButton: {
-    width: 40,
+  itemActions: { flexDirection: 'row', alignItems: 'center', marginLeft: spacing.xs },
+  iconButton: {
+    width: 38,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.xs,
     borderRadius: radius.md,
   },
 });

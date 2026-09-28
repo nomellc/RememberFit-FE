@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,30 +12,43 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { createCard } from '../api';
+import { createCard, updateCard } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
 export default function CardEditorScreen({ route, navigation }) {
-  const { deckId } = route.params;
-  const [front, setFront] = useState('');
-  const [back, setBack] = useState('');
+  const { deckId, card } = route.params;
+  const isEditing = !!card;
+  const [front, setFront] = useState(card?.frontText ?? '');
+  const [back, setBack] = useState(card?.backText ?? '');
   const [isSaving, setIsSaving] = useState(false);
+  const saveLockRef = useRef(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: isEditing ? '카드 수정' : '새 카드' });
+  }, [isEditing, navigation]);
 
   const canSave = front.trim().length > 0 && back.trim().length > 0 && !isSaving;
 
   const handleSave = async () => {
-    if (!canSave) {
+    if (!front.trim() || !back.trim()) {
       Alert.alert('내용을 확인해주세요', '앞면과 뒷면을 모두 입력해야 카드를 저장할 수 있어요.');
       return;
     }
+    if (saveLockRef.current) return;
 
+    saveLockRef.current = true;
     setIsSaving(true);
     try {
-      await createCard(deckId, front.trim(), back.trim());
+      if (isEditing) {
+        await updateCard(deckId, card.id, front.trim(), back.trim());
+      } else {
+        await createCard(deckId, front.trim(), back.trim());
+      }
       navigation.goBack();
     } catch (error) {
       Alert.alert('카드를 저장하지 못했어요', error.message);
     } finally {
+      saveLockRef.current = false;
       setIsSaving(false);
     }
   };
@@ -52,9 +65,13 @@ export default function CardEditorScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heading}>
-          <Text style={styles.eyebrow}>NEW FLASH CARD</Text>
-          <Text style={styles.title}>무엇을 기억할까요?</Text>
-          <Text style={styles.subtitle}>질문은 짧고 분명하게, 답은 떠올리기 쉽게 적어보세요.</Text>
+          <Text style={styles.eyebrow}>{isEditing ? 'EDIT FLASH CARD' : 'NEW FLASH CARD'}</Text>
+          <Text style={styles.title}>{isEditing ? '카드를 다듬어볼까요?' : '무엇을 기억할까요?'}</Text>
+          <Text style={styles.subtitle}>
+            {isEditing
+              ? '바뀐 내용을 확인한 뒤 저장하면 학습 일정은 그대로 유지돼요.'
+              : '질문은 짧고 분명하게, 답은 떠올리기 쉽게 적어보세요.'}
+          </Text>
         </View>
 
         <View style={styles.fieldGroup}>
@@ -119,7 +136,7 @@ export default function CardEditorScreen({ route, navigation }) {
             <ActivityIndicator color={colors.surface} />
           ) : (
             <>
-              <Text style={styles.saveButtonText}>카드 저장하기</Text>
+              <Text style={styles.saveButtonText}>{isEditing ? '수정 내용 저장' : '카드 저장하기'}</Text>
               <MaterialCommunityIcons name="arrow-right" size={20} color={colors.surface} />
             </>
           )}

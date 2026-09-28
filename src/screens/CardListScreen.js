@@ -1,10 +1,12 @@
-import React, { useCallback, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -12,7 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import EmptyState from '../components/EmptyState';
 import RequestErrorState from '../components/RequestErrorState';
-import { getCards } from '../api';
+import { deleteCard, getCards } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
 export default function CardListScreen({ route, navigation }) {
@@ -20,7 +22,18 @@ export default function CardListScreen({ route, navigation }) {
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
+  const [deletingCardId, setDeletingCardId] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const deleteLockRef = useRef(false);
+
+  const filteredCards = useMemo(() => {
+    const keyword = query.trim().toLocaleLowerCase('ko-KR');
+    if (!keyword) return cards;
+    return cards.filter((card) =>
+      `${card.frontText} ${card.backText}`.toLocaleLowerCase('ko-KR').includes(keyword)
+    );
+  }, [cards, query]);
 
   const loadCards = async ({ refreshing = false } = {}) => {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
@@ -43,6 +56,36 @@ export default function CardListScreen({ route, navigation }) {
   );
 
   const goToAddCard = () => navigation.navigate('CardEditor', { deckId });
+
+  const goToEditCard = (card) => navigation.navigate('CardEditor', { deckId, card });
+
+  const handleDelete = (card) => {
+    Alert.alert(
+      '카드 삭제',
+      '이 카드는 바로 삭제되며 복구할 수 없어요. 삭제할까요?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            if (deleteLockRef.current) return;
+            deleteLockRef.current = true;
+            setDeletingCardId(card.id);
+            try {
+              await deleteCard(deckId, card.id);
+              setCards((current) => current.filter((item) => item.id !== card.id));
+            } catch (error) {
+              Alert.alert('카드를 삭제하지 못했어요', error.message);
+            } finally {
+              deleteLockRef.current = false;
+              setDeletingCardId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -68,6 +111,35 @@ export default function CardListScreen({ route, navigation }) {
       <Text style={styles.eyebrow}>FLASH CARDS</Text>
       <Text style={styles.title}>{deckTitle}</Text>
       <Text style={styles.subtitle}>카드 {cards.length}장 · 앞면을 떠올린 뒤 뒷면으로 확인하세요.</Text>
+      {cards.length > 0 && (
+        <View style={styles.searchBox}>
+          <MaterialCommunityIcons name="magnify" size={20} color={colors.muted} />
+          <TextInput
+            accessibilityLabel="카드 검색"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setQuery}
+            placeholder="앞면과 뒷면에서 검색"
+            placeholderTextColor={colors.muted}
+            returnKeyType="search"
+            style={styles.searchInput}
+            value={query}
+          />
+          {!!query && (
+            <TouchableOpacity
+              accessibilityLabel="검색어 지우기"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => setQuery('')}
+            >
+              <MaterialCommunityIcons name="close-circle" size={19} color={colors.muted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+      {!!query.trim() && (
+        <Text style={styles.searchResult}>{filteredCards.length}개의 카드를 찾았어요.</Text>
+      )}
       {!!loadError && cards.length > 0 && (
         <RequestErrorState error={loadError} onRetry={loadCards} compact />
       )}
@@ -78,8 +150,33 @@ export default function CardListScreen({ route, navigation }) {
     <View style={styles.cardItem}>
       <View style={styles.cardTopRow}>
         <Text style={styles.cardIndex}>{String(index + 1).padStart(2, '0')}</Text>
-        <View style={styles.frontLabel}>
-          <Text style={styles.frontLabelText}>앞면</Text>
+        <View style={styles.cardActions}>
+          <View style={styles.frontLabel}>
+            <Text style={styles.frontLabelText}>앞면</Text>
+          </View>
+          <TouchableOpacity
+            accessibilityLabel="카드 수정"
+            accessibilityRole="button"
+            hitSlop={6}
+            onPress={() => goToEditCard(item)}
+            style={styles.iconButton}
+          >
+            <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityLabel="카드 삭제"
+            accessibilityRole="button"
+            disabled={deletingCardId === item.id}
+            hitSlop={6}
+            onPress={() => handleDelete(item)}
+            style={styles.iconButton}
+          >
+            {deletingCardId === item.id ? (
+              <ActivityIndicator color={colors.danger} size="small" />
+            ) : (
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.danger} />
+            )}
+          </TouchableOpacity>
         </View>
       </View>
       <Text style={styles.frontText}>{item.frontText}</Text>
@@ -94,21 +191,29 @@ export default function CardListScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <FlatList
-        contentContainerStyle={[styles.content, cards.length === 0 && styles.emptyContent]}
-        data={cards}
+        contentContainerStyle={[styles.content, filteredCards.length === 0 && styles.emptyContent]}
+        data={filteredCards}
         keyExtractor={(item) => item.id.toString()}
         ListEmptyComponent={
           isLoading ? (
             <ActivityIndicator color={colors.primary} style={styles.loader} />
           ) : loadError ? (
             <RequestErrorState error={loadError} onRetry={loadCards} />
-          ) : (
+          ) : cards.length === 0 ? (
             <EmptyState
               icon="card-plus-outline"
               title="첫 카드를 추가해보세요"
               description="질문과 답을 한 장씩 쌓으면 나만의 복습 루틴이 시작돼요."
               actionLabel="카드 추가"
               onAction={goToAddCard}
+            />
+          ) : (
+            <EmptyState
+              icon="magnify"
+              title="검색 결과가 없어요"
+              description="검색어를 줄이거나 앞면과 뒷면의 다른 단어로 찾아보세요."
+              actionLabel="검색어 지우기"
+              onAction={() => setQuery('')}
             />
           )
         }
@@ -154,6 +259,20 @@ const styles = StyleSheet.create({
   eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
   title: { ...type.title, color: colors.text },
   subtitle: { ...type.body, color: colors.subText, marginTop: spacing.sm },
+  searchBox: {
+    height: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  searchInput: { flex: 1, height: '100%', color: colors.text, fontSize: 15 },
+  searchResult: { ...type.caption, color: colors.subText, marginTop: spacing.sm },
   headerAction: {
     height: 34,
     flexDirection: 'row',
@@ -175,6 +294,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   cardIndex: { ...type.caption, color: colors.muted, fontVariant: ['tabular-nums'] },
   frontLabel: {
     paddingHorizontal: spacing.sm,
@@ -183,6 +303,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   frontLabelText: { fontSize: 11, color: colors.primary, fontWeight: '800' },
+  iconButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
   frontText: {
     fontSize: 19,
     lineHeight: 27,
