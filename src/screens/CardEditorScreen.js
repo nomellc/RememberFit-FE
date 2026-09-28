@@ -30,15 +30,14 @@ export default function CardEditorScreen({ route, navigation }) {
     }
 
     setIsSaving(true);
-    const result = await createCard(deckId, front.trim(), back.trim());
-    setIsSaving(false);
-
-    if (result === null) {
-      Alert.alert('카드를 저장하지 못했어요', '서버 연결을 확인한 뒤 다시 시도해주세요.');
-      return;
+    try {
+      await createCard(deckId, front.trim(), back.trim());
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('카드를 저장하지 못했어요', error.message);
+    } finally {
+      setIsSaving(false);
     }
-
-    navigation.goBack();
   };
 
   return (
@@ -71,6 +70,7 @@ export default function CardEditorScreen({ route, navigation }) {
           <TextInput
             accessibilityLabel="카드 앞면"
             autoFocus
+            maxLength={200}
             multiline
             onChangeText={setFront}
             placeholder="예: accommodate의 뜻은?"
@@ -95,6 +95,7 @@ export default function CardEditorScreen({ route, navigation }) {
           </View>
           <TextInput
             accessibilityLabel="카드 뒷면"
+            maxLength={1000}
             multiline
             onChangeText={setBack}
             placeholder="예: 수용하다, 공간을 제공하다"

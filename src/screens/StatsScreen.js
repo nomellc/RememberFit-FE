@@ -11,6 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
+import RequestErrorState from '../components/RequestErrorState';
 import { getDecks, getHomeStats } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
@@ -37,15 +38,22 @@ export default function StatsScreen() {
   const [deckCount, setDeckCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   const loadStats = async ({ refreshing = false } = {}) => {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
-    const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
-    setStats(statData || EMPTY_STATS);
-    setDeckCount(decks.length);
-    setTotalCards(decks.reduce((sum, deck) => sum + (deck.cardCount || 0), 0));
-    setIsLoading(false);
-    setIsRefreshing(false);
+    setLoadError(null);
+    try {
+      const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
+      setStats(statData || EMPTY_STATS);
+      setDeckCount(decks.length);
+      setTotalCards(decks.reduce((sum, deck) => sum + (deck.cardCount || 0), 0));
+    } catch (error) {
+      setLoadError(error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -94,6 +102,8 @@ export default function StatsScreen() {
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.loadingText}>학습 기록을 불러오고 있어요</Text>
           </View>
+        ) : loadError ? (
+          <RequestErrorState error={loadError} onRetry={loadStats} />
         ) : (
           <>
             <View style={styles.overviewCard}>

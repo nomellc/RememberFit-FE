@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
 import EmptyState from '../components/EmptyState';
+import RequestErrorState from '../components/RequestErrorState';
 import { createDeck, deleteDeck, getDecks } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
@@ -26,13 +27,20 @@ export default function DeckScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   const loadDecks = async ({ refreshing = false } = {}) => {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
-    const data = await getDecks();
-    setDecks(data);
-    setIsLoading(false);
-    setIsRefreshing(false);
+    setLoadError(null);
+    try {
+      const data = await getDecks();
+      setDecks(data);
+    } catch (error) {
+      setLoadError(error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -46,16 +54,15 @@ export default function DeckScreen({ navigation }) {
     if (!title || isAdding) return;
 
     setIsAdding(true);
-    const result = await createDeck(title);
-    setIsAdding(false);
-
-    if (result === null) {
-      Alert.alert('암기장을 만들지 못했어요', '서버 연결을 확인한 뒤 다시 시도해주세요.');
-      return;
+    try {
+      await createDeck(title);
+      setNewDeckTitle('');
+      await loadDecks();
+    } catch (error) {
+      Alert.alert('암기장을 만들지 못했어요', error.message);
+    } finally {
+      setIsAdding(false);
     }
-
-    setNewDeckTitle('');
-    loadDecks();
   };
 
   const handleDelete = (deck) => {
@@ -68,12 +75,12 @@ export default function DeckScreen({ navigation }) {
           text: '삭제',
           style: 'destructive',
           onPress: async () => {
-            const result = await deleteDeck(deck.id);
-            if (result === null) {
-              Alert.alert('삭제하지 못했어요', '잠시 후 다시 시도해주세요.');
-              return;
+            try {
+              await deleteDeck(deck.id);
+              await loadDecks();
+            } catch (error) {
+              Alert.alert('삭제하지 못했어요', error.message);
             }
-            loadDecks();
           },
         },
       ]
@@ -133,6 +140,9 @@ export default function DeckScreen({ navigation }) {
         <Text style={styles.listTitle}>전체 암기장</Text>
         <Text style={styles.listCount}>{decks.length}</Text>
       </View>
+      {!!loadError && decks.length > 0 && (
+        <RequestErrorState error={loadError} onRetry={loadDecks} compact />
+      )}
     </>
   );
 
@@ -185,6 +195,8 @@ export default function DeckScreen({ navigation }) {
           ListEmptyComponent={
             isLoading ? (
               <ActivityIndicator color={colors.primary} style={styles.loader} />
+            ) : loadError ? (
+              <RequestErrorState error={loadError} onRetry={loadDecks} />
             ) : (
               <EmptyState
                 icon="notebook-plus-outline"

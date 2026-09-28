@@ -9,9 +9,10 @@ export default function EmptyState({
   description,
   actionLabel,
   onAction,
+  compact = false,
 }) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, compact && styles.compactContainer]}>
       <View style={styles.iconWrap}>
         <MaterialCommunityIcons name={icon} size={28} color={colors.primary} />
       </View>
@@ -37,6 +38,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.huge,
+  },
+  compactContainer: {
+    paddingVertical: spacing.xxl,
   },
   iconWrap: {
     width: 56,

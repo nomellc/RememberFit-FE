@@ -12,6 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EmptyState from '../components/EmptyState';
+import RequestErrorState from '../components/RequestErrorState';
 import { getDueCards, gradeCard } from '../api';
 import { colors, radius, shadow, spacing, type } from '../theme/color';
 
@@ -29,15 +30,24 @@ export default function StudyScreen({ route, navigation }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const animatedValue = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const loadStudyCards = async () => {
+  const loadStudyCards = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
       const data = await getDueCards(deckId);
       setCards(data);
+      setCurrentIndex(0);
+    } catch (error) {
+      setLoadError(error);
+    } finally {
       setIsLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
     loadStudyCards();
   }, [deckId]);
 
@@ -57,26 +67,25 @@ export default function StudyScreen({ route, navigation }) {
     if (isSubmitting) return;
     const currentCard = cards[currentIndex];
     setIsSubmitting(true);
-    const result = await gradeCard(deckId, currentCard.id, quality);
+    try {
+      await gradeCard(deckId, currentCard.id, quality);
 
-    if (result === null) {
+      animatedValue.setValue(0);
+      setIsFlipped(false);
+
+      if (currentIndex < cards.length - 1) {
+        setCurrentIndex((index) => index + 1);
+        return;
+      }
+
+      Alert.alert('오늘 학습 완료', `${cards.length}장의 카드를 모두 확인했어요.`, [
+        { text: '마치기', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error) {
+      Alert.alert('학습 기록을 저장하지 못했어요', error.message);
+    } finally {
       setIsSubmitting(false);
-      Alert.alert('학습 기록을 저장하지 못했어요', '서버 연결을 확인한 뒤 다시 시도해주세요.');
-      return;
     }
-
-    animatedValue.setValue(0);
-    setIsFlipped(false);
-    setIsSubmitting(false);
-
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex((index) => index + 1);
-      return;
-    }
-
-    Alert.alert('오늘 학습 완료', `${cards.length}장의 카드를 모두 확인했어요.`, [
-      { text: '마치기', onPress: () => navigation.goBack() },
-    ]);
   };
 
   if (isLoading) {
@@ -84,6 +93,26 @@ export default function StudyScreen({ route, navigation }) {
       <SafeAreaView style={styles.centered}>
         <ActivityIndicator color={colors.primary} size="large" />
         <Text style={styles.loadingText}>오늘의 카드를 준비하고 있어요</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.emptyScreen}>
+        <View style={styles.emptyHeader}>
+          <TouchableOpacity
+            accessibilityLabel="학습 화면 닫기"
+            accessibilityRole="button"
+            onPress={() => navigation.goBack()}
+            style={styles.closeButton}
+          >
+            <MaterialCommunityIcons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.emptyBody}>
+          <RequestErrorState error={loadError} onRetry={loadStudyCards} />
+        </View>
       </SafeAreaView>
     );
   }

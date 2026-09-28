@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
 import EmptyState from '../components/EmptyState';
+import RequestErrorState from '../components/RequestErrorState';
 import { getDecks, getHomeStats } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
@@ -32,6 +33,7 @@ export default function HomeScreen({ navigation }) {
   const [recentDecks, setRecentDecks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   const todayLabel = useMemo(
     () =>
@@ -45,11 +47,17 @@ export default function HomeScreen({ navigation }) {
 
   const loadData = async ({ refreshing = false } = {}) => {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
-    const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
-    setStats(statData || EMPTY_STATS);
-    setRecentDecks(decks.slice(0, 3));
-    setIsLoading(false);
-    setIsRefreshing(false);
+    setLoadError(null);
+    try {
+      const [statData, decks] = await Promise.all([getHomeStats(), getDecks()]);
+      setStats(statData || EMPTY_STATS);
+      setRecentDecks(decks.slice(0, 3));
+    } catch (error) {
+      setLoadError(error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -91,6 +99,8 @@ export default function HomeScreen({ navigation }) {
             <ActivityIndicator color={colors.primary} />
             <Text style={styles.loadingText}>학습 현황을 정리하고 있어요</Text>
           </View>
+        ) : loadError ? (
+          <RequestErrorState error={loadError} onRetry={loadData} compact />
         ) : (
           <View style={styles.statsStrip}>
             <StatItem value={stats.newCount || 0} label="새 카드" tone={colors.primary} />
@@ -99,73 +109,77 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        <TouchableOpacity
-          accessibilityRole="button"
-          activeOpacity={0.88}
-          style={styles.studyCard}
-          onPress={() => navigation.navigate('Decks', { screen: 'DeckList' })}
-        >
-          <View style={styles.studyCardCopy}>
-            <Text style={styles.studyEyebrow}>TODAY'S SESSION</Text>
-            <Text style={styles.studyTitle}>오늘 학습 시작하기</Text>
-            <Text style={styles.studySubtitle}>
-              {reviewCount > 0
-                ? `${reviewCount}장의 카드가 복습을 기다리고 있어요.`
-                : '새 암기장을 열고 첫 카드를 만들어보세요.'}
-            </Text>
-          </View>
-          <View style={styles.arrowButton}>
-            <MaterialCommunityIcons name="arrow-right" size={22} color={colors.primaryDark} />
-          </View>
-          <View style={styles.studyCardAccent} />
-        </TouchableOpacity>
-
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionEyebrow}>RECENT</Text>
-            <Text style={styles.sectionTitle}>최근 암기장</Text>
-          </View>
-          {recentDecks.length > 0 && (
-            <TouchableOpacity onPress={() => navigation.navigate('Decks')}>
-              <Text style={styles.allLink}>전체 보기</Text>
+        {!loadError && (
+          <>
+            <TouchableOpacity
+              accessibilityRole="button"
+              activeOpacity={0.88}
+              style={styles.studyCard}
+              onPress={() => navigation.navigate('Decks', { screen: 'DeckList' })}
+            >
+              <View style={styles.studyCardCopy}>
+                <Text style={styles.studyEyebrow}>TODAY'S SESSION</Text>
+                <Text style={styles.studyTitle}>오늘 학습 시작하기</Text>
+                <Text style={styles.studySubtitle}>
+                  {reviewCount > 0
+                    ? `${reviewCount}장의 카드가 복습을 기다리고 있어요.`
+                    : '새 암기장을 열고 첫 카드를 만들어보세요.'}
+                </Text>
+              </View>
+              <View style={styles.arrowButton}>
+                <MaterialCommunityIcons name="arrow-right" size={22} color={colors.primaryDark} />
+              </View>
+              <View style={styles.studyCardAccent} />
             </TouchableOpacity>
-          )}
-        </View>
 
-        {recentDecks.length === 0 && !isLoading ? (
-          <EmptyState
-            icon="notebook-outline"
-            title="아직 암기장이 없어요"
-            description="배우고 싶은 주제로 첫 암기장을 만들어보세요."
-            actionLabel="암기장 만들기"
-            onAction={() => navigation.navigate('Decks')}
-          />
-        ) : (
-          <View style={styles.deckList}>
-            {recentDecks.map((deck, index) => (
-              <TouchableOpacity
-                accessibilityRole="button"
-                activeOpacity={0.75}
-                key={deck.id}
-                style={styles.deckRow}
-                onPress={() =>
-                  navigation.navigate('Decks', {
-                    screen: 'CardList',
-                    params: { deckId: deck.id, deckTitle: deck.title },
-                  })
-                }
-              >
-                <Text style={styles.deckIndex}>{String(index + 1).padStart(2, '0')}</Text>
-                <View style={styles.deckInfo}>
-                  <Text numberOfLines={1} style={styles.deckTitle}>
-                    {deck.title}
-                  </Text>
-                  <Text style={styles.deckCount}>{deck.cardCount || 0}장의 카드</Text>
-                </View>
-                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
-              </TouchableOpacity>
-            ))}
-          </View>
+            <View style={styles.sectionHeader}>
+              <View>
+                <Text style={styles.sectionEyebrow}>RECENT</Text>
+                <Text style={styles.sectionTitle}>최근 암기장</Text>
+              </View>
+              {recentDecks.length > 0 && (
+                <TouchableOpacity onPress={() => navigation.navigate('Decks')}>
+                  <Text style={styles.allLink}>전체 보기</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {recentDecks.length === 0 && !isLoading ? (
+              <EmptyState
+                icon="notebook-outline"
+                title="아직 암기장이 없어요"
+                description="배우고 싶은 주제로 첫 암기장을 만들어보세요."
+                actionLabel="암기장 만들기"
+                onAction={() => navigation.navigate('Decks')}
+              />
+            ) : (
+              <View style={styles.deckList}>
+                {recentDecks.map((deck, index) => (
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    activeOpacity={0.75}
+                    key={deck.id}
+                    style={styles.deckRow}
+                    onPress={() =>
+                      navigation.navigate('Decks', {
+                        screen: 'CardList',
+                        params: { deckId: deck.id, deckTitle: deck.title },
+                      })
+                    }
+                  >
+                    <Text style={styles.deckIndex}>{String(index + 1).padStart(2, '0')}</Text>
+                    <View style={styles.deckInfo}>
+                      <Text numberOfLines={1} style={styles.deckTitle}>
+                        {deck.title}
+                      </Text>
+                      <Text style={styles.deckCount}>{deck.cardCount || 0}장의 카드</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>

@@ -11,6 +11,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import EmptyState from '../components/EmptyState';
+import RequestErrorState from '../components/RequestErrorState';
 import { getCards } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
@@ -19,13 +20,20 @@ export default function CardListScreen({ route, navigation }) {
   const [cards, setCards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   const loadCards = async ({ refreshing = false } = {}) => {
     refreshing ? setIsRefreshing(true) : setIsLoading(true);
-    const data = await getCards(deckId);
-    setCards(data);
-    setIsLoading(false);
-    setIsRefreshing(false);
+    setLoadError(null);
+    try {
+      const data = await getCards(deckId);
+      setCards(data);
+    } catch (error) {
+      setLoadError(error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
   };
 
   useFocusEffect(
@@ -60,6 +68,9 @@ export default function CardListScreen({ route, navigation }) {
       <Text style={styles.eyebrow}>FLASH CARDS</Text>
       <Text style={styles.title}>{deckTitle}</Text>
       <Text style={styles.subtitle}>카드 {cards.length}장 · 앞면을 떠올린 뒤 뒷면으로 확인하세요.</Text>
+      {!!loadError && cards.length > 0 && (
+        <RequestErrorState error={loadError} onRetry={loadCards} compact />
+      )}
     </View>
   );
 
@@ -89,6 +100,8 @@ export default function CardListScreen({ route, navigation }) {
         ListEmptyComponent={
           isLoading ? (
             <ActivityIndicator color={colors.primary} style={styles.loader} />
+          ) : loadError ? (
+            <RequestErrorState error={loadError} onRetry={loadCards} />
           ) : (
             <EmptyState
               icon="card-plus-outline"
