@@ -10,7 +10,6 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import BrandMark from '../components/BrandMark';
 import RequestErrorState from '../components/RequestErrorState';
 import { getDecks, getStudyInsights, getStudyStatistics } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
@@ -27,7 +26,7 @@ const qualityRows = [
   { key: 'againCount', label: '다시', color: colors.danger },
   { key: 'hardCount', label: '어려움', color: colors.warning },
   { key: 'goodCount', label: '알맞음', color: colors.primary },
-  { key: 'easyCount', label: '쉬움', color: colors.success },
+  { key: 'easyCount', label: '쉬움', color: colors.easy },
 ];
 
 function MetricRow({ icon, label, value, caption, color, last }) {
@@ -42,7 +41,6 @@ function MetricRow({ icon, label, value, caption, color, last }) {
       </View>
       <View style={styles.metricCopy}>
         <Text style={styles.metricLabel}>{label}</Text>
-        <Text style={styles.metricCaption}>{caption}</Text>
       </View>
       <Text style={[styles.metricValue, { color: color.foreground }]}>{value}</Text>
     </View>
@@ -110,12 +108,6 @@ export default function StatsScreen() {
     return Math.min(Math.round(((stats.doneCount || 0) / totalCards) * 100), 100);
   }, [stats.doneCount, totalCards]);
 
-  const guideText = useMemo(() => {
-    if (totalCards === 0) return '첫 암기장과 카드를 만들면 이곳에 학습 흐름이 기록돼요.';
-    if (stats.reviewCount > 0) return `오늘은 복습 카드 ${stats.reviewCount}장을 먼저 확인해보세요.`;
-    return '오늘 예정된 복습을 마쳤어요. 새 카드를 천천히 추가해도 좋아요.';
-  }, [stats.reviewCount, totalCards]);
-
   const weeklyMaximum = useMemo(
     () => Math.max(...insights.weeklyActivity.map((item) => item.count), 1),
     [insights.weeklyActivity]
@@ -148,15 +140,8 @@ export default function StatsScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.brandRow}>
-          <BrandMark />
-          <Text style={styles.brandName}>REMEMBERFIT</Text>
-        </View>
-
         <View style={styles.heading}>
-          <Text style={styles.eyebrow}>LEARNING RECORD</Text>
-          <Text accessibilityRole="header" style={styles.title}>나의 학습 기록</Text>
-          <Text style={styles.subtitle}>쌓인 카드와 오늘의 복습 상태를 한눈에 확인하세요.</Text>
+          <Text accessibilityRole="header" style={styles.title}>학습 기록</Text>
         </View>
 
         {isLoading ? (
@@ -195,20 +180,17 @@ export default function StatsScreen() {
               </View>
               <View
                 accessibilityLabel="기억 완료율"
+                accessibilityHint="3회 이상 기억한 카드의 비율"
                 accessibilityRole="progressbar"
                 accessibilityValue={{ min: 0, max: 100, now: completionRate, text: `${completionRate}%` }}
                 style={styles.progressTrack}
               >
                 <View style={[styles.progressFill, { width: `${completionRate}%` }]} />
               </View>
-              <Text style={styles.progressCaption}>3회 이상 기억해 낸 카드를 기준으로 계산해요.</Text>
             </View>
 
             <View style={styles.sectionHeading}>
-              <View>
-                <Text accessibilityRole="header" style={styles.sectionTitle}>최근 7일 학습</Text>
-                <Text style={styles.sectionSubCaption}>평가를 완료한 카드 수</Text>
-              </View>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>최근 7일 학습</Text>
               <View accessible accessibilityLabel={`${insights.streakDays || 0}일 연속 학습`} style={styles.streakBadge}>
                 <MaterialCommunityIcons name="fire" size={16} color={colors.warning} />
                 <Text style={styles.streakText}>{insights.streakDays || 0}일 연속</Text>
@@ -234,14 +216,10 @@ export default function StatsScreen() {
                   );
                 })}
               </View>
-              {insights.totalStudyCount === 0 && (
-                <Text style={styles.activityEmpty}>카드를 평가하면 주간 학습 흐름이 이곳에 쌓여요.</Text>
-              )}
             </View>
 
             <View style={styles.sectionHeading}>
               <Text accessibilityRole="header" style={styles.sectionTitle}>평가 분포</Text>
-              <Text style={styles.sectionCaption}>전체 학습</Text>
             </View>
 
             <View style={styles.distributionCard}>
@@ -258,7 +236,6 @@ export default function StatsScreen() {
 
             <View style={styles.sectionHeading}>
               <Text accessibilityRole="header" style={styles.sectionTitle}>현재 상태</Text>
-              <Text style={styles.sectionCaption}>카드 수</Text>
             </View>
 
             <View style={styles.metricList}>
@@ -278,7 +255,7 @@ export default function StatsScreen() {
               />
               <MetricRow
                 caption="3회 이상 기억한 카드"
-                color={{ background: colors.successSoft, foreground: colors.success }}
+                color={{ background: colors.surfaceMuted, foreground: colors.text }}
                 icon="check-circle-outline"
                 label="기억 완료"
                 value={stats.doneCount || 0}
@@ -286,15 +263,6 @@ export default function StatsScreen() {
               />
             </View>
 
-            <View style={styles.guideBox}>
-              <View style={styles.guideIcon}>
-                <MaterialCommunityIcons name="lightbulb-on-outline" size={22} color={colors.warning} />
-              </View>
-              <View style={styles.guideCopy}>
-                <Text style={styles.guideTitle}>오늘의 학습 가이드</Text>
-                <Text style={styles.guideText}>{guideText}</Text>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
@@ -312,12 +280,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.huge,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  brandName: { ...type.eyebrow, color: colors.text, letterSpacing: 1.6 },
-  heading: { marginTop: spacing.xxxl, marginBottom: spacing.xxl },
-  eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
+  heading: { marginTop: spacing.lg, marginBottom: spacing.xxl },
   title: { ...type.title, color: colors.text },
-  subtitle: { ...type.body, color: colors.subText, marginTop: spacing.sm },
   loadingBox: {
     minHeight: 220,
     alignItems: 'center',
@@ -332,13 +296,13 @@ const styles = StyleSheet.create({
   overviewCard: {
     padding: spacing.xxl,
     borderRadius: radius.xl,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
   },
   overviewTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  overviewLabel: { ...type.eyebrow, color: '#BDD0C6' },
+  overviewLabel: { ...type.body, fontWeight: '700', color: colors.surface },
   totalRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
-  totalValue: { color: colors.surface, fontSize: 42, lineHeight: 50, fontWeight: '800', letterSpacing: -1 },
-  totalUnit: { color: '#BDD0C6', fontSize: 15, fontWeight: '700', marginLeft: spacing.xs },
+  totalValue: { color: colors.surface, fontSize: 42, lineHeight: 50, fontWeight: '700', letterSpacing: -1 },
+  totalUnit: { color: colors.surface, fontSize: 15, fontWeight: '700', marginLeft: spacing.xs },
   deckBadge: {
     height: 36,
     paddingHorizontal: spacing.md,
@@ -350,7 +314,7 @@ const styles = StyleSheet.create({
   },
   deckBadgeText: { color: colors.primaryDark, fontSize: 12, fontWeight: '700' },
   progressCopy: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xxl },
-  progressLabel: { ...type.caption, color: '#CFD9D3' },
+  progressLabel: { ...type.caption, color: colors.surface, fontWeight: '700' },
   progressValue: { ...type.caption, color: colors.surface, fontWeight: '800' },
   progressTrack: {
     height: 7,
@@ -360,7 +324,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressFill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.accent },
-  progressCaption: { fontSize: 11, lineHeight: 16, color: '#AFC1B7', marginTop: spacing.sm },
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -369,8 +332,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: { ...type.section, color: colors.text },
-  sectionCaption: { ...type.caption, color: colors.muted },
-  sectionSubCaption: { ...type.caption, color: colors.subText, marginTop: 2 },
   streakBadge: {
     height: 32,
     flexDirection: 'row',
@@ -383,13 +344,13 @@ const styles = StyleSheet.create({
   streakText: { color: colors.warning, fontSize: 12, fontWeight: '800' },
   activityCard: {
     padding: spacing.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
   activitySummary: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
-  activityTotal: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  activityTotal: { color: colors.text, fontSize: 26, fontWeight: '700' },
   activityUnit: { ...type.caption, color: colors.subText },
   chart: {
     height: 116,
@@ -406,18 +367,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   chartLabel: { ...type.caption, color: colors.muted, marginTop: spacing.sm, fontSize: 11 },
-  activityEmpty: { ...type.caption, color: colors.subText, textAlign: 'center', marginTop: spacing.md },
   distributionCard: {
     gap: spacing.lg,
     padding: spacing.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
   distributionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   distributionCopy: { width: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  distributionDot: { width: 8, height: 8, borderRadius: radius.pill },
+  distributionDot: { width: 10, height: 10, borderRadius: radius.pill },
   distributionLabel: { color: colors.text, fontSize: 13, fontWeight: '700' },
   distributionTrack: {
     flex: 1,
@@ -437,7 +397,7 @@ const styles = StyleSheet.create({
   },
   metricList: {
     paddingHorizontal: spacing.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
@@ -453,26 +413,5 @@ const styles = StyleSheet.create({
   },
   metricCopy: { flex: 1, paddingHorizontal: spacing.md },
   metricLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  metricCaption: { ...type.caption, color: colors.subText, marginTop: 2 },
   metricValue: { fontSize: 23, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  guideBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    padding: spacing.lg,
-    marginTop: spacing.xxl,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentSoft,
-  },
-  guideIcon: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-  guideCopy: { flex: 1 },
-  guideTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
-  guideText: { ...type.caption, color: colors.subText, marginTop: 4 },
 });

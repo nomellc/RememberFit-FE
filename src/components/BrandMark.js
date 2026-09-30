@@ -29,7 +29,6 @@ const styles = StyleSheet.create({
     left: '18%',
     top: '16%',
     backgroundColor: colors.primary,
-    transform: [{ rotate: '-9deg' }],
   },
   frontCard: {
     position: 'absolute',

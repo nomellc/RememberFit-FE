@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import FeedbackPressable from './FeedbackPressable';
 import { colors, radius, spacing, type } from '../theme/color';
 
 export default function EmptyState({
@@ -19,16 +20,18 @@ export default function EmptyState({
       <Text accessibilityRole="header" style={styles.title}>{title}</Text>
       {!!description && <Text style={styles.description}>{description}</Text>}
       {!!actionLabel && !!onAction && (
-        <TouchableOpacity
+        <FeedbackPressable
           accessibilityLabel={actionLabel}
           accessibilityRole="button"
-          activeOpacity={0.8}
+          baseColor={colors.primary}
+          hoverColor={colors.primaryHover}
+          pressedColor={colors.primaryPressed}
           onPress={onAction}
           style={styles.action}
         >
           <Text style={styles.actionText}>{actionLabel}</Text>
           <MaterialCommunityIcons name="arrow-right" size={17} color={colors.surface} />
-        </TouchableOpacity>
+        </FeedbackPressable>
       )}
     </View>
   );
@@ -49,9 +52,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.accentSoft,
     marginBottom: spacing.lg,
-    transform: [{ rotate: '-3deg' }],
   },
   title: {
     ...type.section,
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     height: 46,
     paddingHorizontal: spacing.xl,
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
     backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',

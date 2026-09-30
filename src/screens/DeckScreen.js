@@ -9,14 +9,13 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import BrandMark from '../components/BrandMark';
 import EmptyState from '../components/EmptyState';
+import FeedbackPressable from '../components/FeedbackPressable';
 import RequestErrorState from '../components/RequestErrorState';
 import TextEditModal from '../components/TextEditModal';
 import { createDeck, deleteDeck, getDecks, updateDeck } from '../api';
@@ -141,15 +140,8 @@ export default function DeckScreen({ navigation }) {
 
   const renderHeader = () => (
     <>
-      <View style={styles.brandRow}>
-        <BrandMark />
-        <Text style={styles.brandName}>REMEMBERFIT</Text>
-      </View>
-
       <View style={styles.heading}>
-        <Text style={styles.eyebrow}>MY COLLECTION</Text>
-        <Text accessibilityRole="header" style={styles.title}>나의 암기장</Text>
-        <Text style={styles.subtitle}>주제별로 카드를 모으고, 필요한 순간 다시 꺼내보세요.</Text>
+        <Text accessibilityRole="header" style={styles.title}>암기장</Text>
       </View>
 
       <View style={styles.createBox}>
@@ -162,20 +154,22 @@ export default function DeckScreen({ navigation }) {
             maxLength={40}
             onChangeText={setNewDeckTitle}
             onSubmitEditing={handleAddDeck}
-            placeholder="예: 여행 영어, 자격증 핵심"
+            placeholder="암기장 이름"
             placeholderTextColor={colors.muted}
             returnKeyType="done"
             style={styles.input}
             value={newDeckTitle}
           />
-          <TouchableOpacity
+          <FeedbackPressable
             accessibilityLabel="암기장 추가"
             accessibilityRole="button"
             accessibilityState={{
               busy: isAdding,
               disabled: !newDeckTitle.trim() || isAdding,
             }}
-            activeOpacity={0.8}
+            baseColor={colors.primary}
+            hoverColor={colors.primaryHover}
+            pressedColor={colors.primaryPressed}
             disabled={!newDeckTitle.trim() || isAdding}
             onPress={handleAddDeck}
             style={[
@@ -188,12 +182,12 @@ export default function DeckScreen({ navigation }) {
             ) : (
               <MaterialCommunityIcons name="plus" size={24} color={colors.surface} />
             )}
-          </TouchableOpacity>
+          </FeedbackPressable>
         </View>
       </View>
 
       <View style={styles.listHeading}>
-        <Text accessibilityRole="header" style={styles.listTitle}>전체 암기장</Text>
+        <Text accessibilityRole="header" style={styles.listTitle}>목록</Text>
         <Text style={styles.listCount}>{decks.length}</Text>
       </View>
       {!!loadError && decks.length > 0 && (
@@ -202,46 +196,51 @@ export default function DeckScreen({ navigation }) {
     </>
   );
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item }) => (
     <View style={styles.deckItem}>
-      <TouchableOpacity
+      <FeedbackPressable
         accessibilityLabel={`${item.title}, 카드 ${item.cardCount || 0}장`}
         accessibilityHint="카드 목록을 엽니다"
         accessibilityRole="button"
-        activeOpacity={0.7}
+        baseColor={colors.background}
+        hoverColor={colors.surfaceHover}
+        pressedColor={colors.surfacePressed}
         onPress={() =>
           navigation.navigate('CardList', { deckId: item.id, deckTitle: item.title })
         }
         style={styles.deckMain}
       >
-        <View style={styles.deckNumberWrap}>
-          <Text style={styles.deckNumber}>{String(index + 1).padStart(2, '0')}</Text>
-        </View>
         <View style={styles.deckCopy}>
           <Text numberOfLines={1} style={styles.deckTitle}>
             {item.title}
           </Text>
           <Text style={styles.deckCount}>{item.cardCount || 0}장의 카드</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
-      </TouchableOpacity>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.subText} />
+      </FeedbackPressable>
       <View style={styles.itemActions}>
-        <TouchableOpacity
+        <FeedbackPressable
           accessibilityLabel={`${item.title} 암기장 이름 수정`}
           accessibilityRole="button"
+          baseColor="rgba(0, 0, 0, 0)"
+          hoverColor={colors.surfacePressed}
+          pressedColor={colors.border}
           hitSlop={6}
           onPress={() => openRenameModal(item)}
           style={styles.iconButton}
         >
-          <MaterialCommunityIcons name="pencil-outline" size={19} color={colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity
+          <MaterialCommunityIcons name="pencil-outline" size={19} color={colors.subText} />
+        </FeedbackPressable>
+        <FeedbackPressable
           accessibilityLabel={`${item.title} 암기장 삭제`}
           accessibilityRole="button"
           accessibilityState={{
             busy: deletingDeckId === item.id,
             disabled: deletingDeckId === item.id,
           }}
+          baseColor="rgba(0, 0, 0, 0)"
+          hoverColor={colors.dangerSoft}
+          pressedColor="#F5D7D3"
           disabled={deletingDeckId === item.id}
           hitSlop={6}
           onPress={() => handleDelete(item)}
@@ -252,7 +251,7 @@ export default function DeckScreen({ navigation }) {
           ) : (
             <MaterialCommunityIcons name="trash-can-outline" size={19} color={colors.danger} />
           )}
-        </TouchableOpacity>
+        </FeedbackPressable>
       </View>
     </View>
   );
@@ -278,8 +277,7 @@ export default function DeckScreen({ navigation }) {
             ) : (
               <EmptyState
                 icon="notebook-plus-outline"
-                title="첫 암기장을 만들어보세요"
-                description="위 입력창에 기억하고 싶은 주제를 적으면 바로 시작할 수 있어요."
+                title="암기장이 없습니다"
               />
             )
           }
@@ -325,19 +323,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.huge,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  brandName: { ...type.eyebrow, color: colors.text, letterSpacing: 1.6 },
-  heading: { marginTop: spacing.xxxl },
-  eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
+  heading: { marginTop: spacing.lg },
   title: { ...type.title, color: colors.text },
-  subtitle: { ...type.body, color: colors.subText, marginTop: spacing.sm, maxWidth: 360 },
   createBox: {
     marginTop: spacing.xxl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
   inputLabel: { ...type.caption, color: colors.text, fontWeight: '700', marginBottom: spacing.sm },
   inputRow: { flexDirection: 'row', gap: spacing.sm },
@@ -348,7 +337,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     color: colors.text,
     fontSize: 15,
   },
@@ -360,15 +349,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.primary,
   },
-  addButtonDisabled: { backgroundColor: colors.muted },
+  addButtonDisabled: { backgroundColor: colors.primary, opacity: 0.5 },
   listHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.xxxl,
     paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.text,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   listTitle: { ...type.section, color: colors.text },
   listCount: {
@@ -376,8 +365,8 @@ const styles = StyleSheet.create({
     height: 24,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    color: colors.primary,
+    backgroundColor: colors.surfaceMuted,
+    color: colors.text,
     fontSize: 12,
     lineHeight: 24,
     fontWeight: '800',
@@ -392,17 +381,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   deckMain: { flex: 1, minHeight: 86, flexDirection: 'row', alignItems: 'center' },
-  deckNumberWrap: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
-    transform: [{ rotate: '-2deg' }],
-  },
-  deckNumber: { ...type.caption, color: colors.warning, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  deckCopy: { flex: 1, paddingHorizontal: spacing.md },
+  deckCopy: { flex: 1, paddingRight: spacing.md },
   deckTitle: { fontSize: 16, color: colors.text, fontWeight: '700' },
   deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
   itemActions: { flexDirection: 'row', alignItems: 'center', marginLeft: spacing.xs },

@@ -8,9 +8,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
+import FeedbackPressable from './FeedbackPressable';
 import { colors, radius, spacing, type } from '../theme/color';
 
 export default function TextEditModal({
@@ -56,7 +56,6 @@ export default function TextEditModal({
           style={StyleSheet.absoluteFill}
         />
         <View accessibilityViewIsModal style={styles.sheet}>
-          <Text style={styles.eyebrow}>EDIT</Text>
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.label}>{label}</Text>
           <TextInput
@@ -73,20 +72,25 @@ export default function TextEditModal({
             value={value}
           />
           <View style={styles.actions}>
-            <TouchableOpacity
+            <FeedbackPressable
               accessibilityLabel="편집 취소"
               accessibilityRole="button"
               accessibilityState={{ disabled: isSaving }}
+              baseColor={colors.surface}
+              hoverColor={colors.surfaceHover}
+              pressedColor={colors.surfacePressed}
               disabled={isSaving}
               onPress={onCancel}
               style={styles.cancelButton}
             >
               <Text style={styles.cancelText}>취소</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </FeedbackPressable>
+            <FeedbackPressable
               accessibilityLabel="변경 내용 저장"
               accessibilityRole="button"
-              activeOpacity={0.8}
+              baseColor={colors.primary}
+              hoverColor={colors.primaryHover}
+              pressedColor={colors.primaryPressed}
               accessibilityState={{ busy: isSaving, disabled: !canSubmit }}
               disabled={!canSubmit}
               onPress={onSubmit}
@@ -97,7 +101,7 @@ export default function TextEditModal({
               ) : (
                 <Text style={styles.submitText}>저장</Text>
               )}
-            </TouchableOpacity>
+            </FeedbackPressable>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -120,9 +124,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
-  eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.xs },
   title: { ...type.section, color: colors.text },
-  label: { ...type.caption, color: colors.subText, marginTop: spacing.xl, marginBottom: spacing.sm },
+  label: { ...type.caption, color: colors.text, fontWeight: '700', marginTop: spacing.xl, marginBottom: spacing.sm },
   input: {
     height: 52,
     paddingHorizontal: spacing.lg,
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
   },
-  cancelText: { color: colors.subText, fontSize: 15, fontWeight: '700' },
+  cancelText: { color: colors.text, fontSize: 15, fontWeight: '700' },
   submitButton: {
     minWidth: 84,
     minHeight: 48,
@@ -148,8 +151,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
   },
-  submitButtonDisabled: { backgroundColor: colors.muted },
+  submitButtonDisabled: { backgroundColor: colors.primary, opacity: 0.5 },
   submitText: { color: colors.surface, fontSize: 15, fontWeight: '700' },
 });

@@ -8,12 +8,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import FeedbackPressable from '../components/FeedbackPressable';
 import { createCard, updateCard } from '../api';
-import { colors, radius, spacing, type } from '../theme/color';
+import { colors, radius, spacing } from '../theme/color';
 
 export default function CardEditorScreen({ route, navigation }) {
   const { deckId, card } = route.params;
@@ -64,54 +64,24 @@ export default function CardEditorScreen({ route, navigation }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heading}>
-          <Text style={styles.eyebrow}>{isEditing ? 'EDIT FLASH CARD' : 'NEW FLASH CARD'}</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            {isEditing ? '카드를 다듬어볼까요?' : '무엇을 기억할까요?'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isEditing
-              ? '바뀐 내용을 확인한 뒤 저장하면 학습 일정은 그대로 유지돼요.'
-              : '질문은 짧고 분명하게, 답은 떠올리기 쉽게 적어보세요.'}
-          </Text>
-        </View>
-
         <View style={styles.fieldGroup}>
-          <View style={styles.labelRow}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepText}>1</Text>
-            </View>
-            <View>
-              <Text style={styles.label}>앞면</Text>
-              <Text style={styles.helper}>떠올려야 할 질문이나 단어</Text>
-            </View>
-          </View>
+          <Text style={styles.label}>앞면</Text>
           <TextInput
             accessibilityLabel="카드 앞면"
-            autoFocus
+            autoFocus={Platform.OS === 'web'}
             maxLength={200}
             multiline
             onChangeText={setFront}
             placeholder="예: accommodate의 뜻은?"
             placeholderTextColor={colors.muted}
-            style={[styles.input, styles.frontInput]}
+            style={styles.input}
             textAlignVertical="top"
             value={front}
           />
         </View>
 
-        <View style={styles.connector} />
-
         <View style={styles.fieldGroup}>
-          <View style={styles.labelRow}>
-            <View style={[styles.stepBadge, styles.answerBadge]}>
-              <Text style={[styles.stepText, styles.answerStepText]}>2</Text>
-            </View>
-            <View>
-              <Text style={styles.label}>뒷면</Text>
-              <Text style={styles.helper}>확인할 정답이나 설명</Text>
-            </View>
-          </View>
+          <Text style={styles.label}>뒷면</Text>
           <TextInput
             accessibilityLabel="카드 뒷면"
             maxLength={1000}
@@ -119,7 +89,7 @@ export default function CardEditorScreen({ route, navigation }) {
             onChangeText={setBack}
             placeholder="예: 수용하다, 공간을 제공하다"
             placeholderTextColor={colors.muted}
-            style={[styles.input, styles.backInput]}
+            style={styles.input}
             textAlignVertical="top"
             value={back}
           />
@@ -127,11 +97,13 @@ export default function CardEditorScreen({ route, navigation }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
+        <FeedbackPressable
           accessibilityLabel={isEditing ? '수정 내용 저장' : '카드 저장하기'}
           accessibilityRole="button"
           accessibilityState={{ busy: isSaving, disabled: !canSave }}
-          activeOpacity={0.85}
+          baseColor={colors.primary}
+          hoverColor={colors.primaryHover}
+          pressedColor={colors.primaryPressed}
           disabled={!canSave}
           onPress={handleSave}
           style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
@@ -144,7 +116,7 @@ export default function CardEditorScreen({ route, navigation }) {
               <MaterialCommunityIcons name="arrow-right" size={20} color={colors.surface} />
             </>
           )}
-        </TouchableOpacity>
+        </FeedbackPressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -160,43 +132,21 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xxxl,
   },
-  heading: { marginBottom: spacing.xxxl },
-  eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
-  title: { ...type.title, color: colors.text },
-  subtitle: { ...type.body, color: colors.subText, marginTop: spacing.sm, maxWidth: 360 },
   fieldGroup: {
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    marginBottom: spacing.xxl,
   },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.lg },
-  stepBadge: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-  },
-  answerBadge: { backgroundColor: colors.accentSoft },
-  stepText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
-  answerStepText: { color: colors.warning },
-  label: { fontSize: 16, color: colors.text, fontWeight: '700' },
-  helper: { ...type.caption, color: colors.subText, marginTop: 1 },
+  label: { fontSize: 16, color: colors.text, fontWeight: '700', marginBottom: spacing.sm },
   input: {
     minHeight: 126,
     padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     color: colors.text,
     fontSize: 17,
     lineHeight: 25,
   },
-  frontInput: { borderLeftWidth: 3, borderLeftColor: colors.primary },
-  backInput: { borderLeftWidth: 3, borderLeftColor: colors.accent },
-  connector: { width: 1, height: spacing.xl, backgroundColor: colors.border, marginLeft: 33 },
   footer: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
@@ -215,8 +165,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
   },
-  saveButtonDisabled: { backgroundColor: colors.muted },
+  saveButtonDisabled: { backgroundColor: colors.primary, opacity: 0.5 },
   saveButtonText: { color: colors.surface, fontSize: 16, fontWeight: '700' },
 });

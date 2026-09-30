@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
@@ -36,7 +36,7 @@ export default function AppNavigator() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.muted,
+          tabBarInactiveTintColor: colors.subText,
           tabBarHideOnKeyboard: true,
           tabBarLabelStyle: {
             fontSize: 12,
@@ -48,16 +48,17 @@ export default function AppNavigator() {
             paddingBottom: Platform.OS === 'ios' ? 22 : 10,
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            elevation: 0,
-            shadowOpacity: 0,
+            borderTopWidth: 1,
+            ...(Platform.OS === 'web' ? { boxShadow: 'none' } : { elevation: 0, shadowOpacity: 0 }),
           },
           tabBarIcon: ({ color, size, focused }) => (
-            <MaterialCommunityIcons
-              color={color}
-              name={iconNames[route.name][focused ? 1 : 0]}
-              size={size + 1}
-            />
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <MaterialCommunityIcons
+                color={color}
+                name={iconNames[route.name][focused ? 1 : 0]}
+                size={size + 1}
+              />
+            </View>
           ),
         })}
       >
@@ -68,3 +69,14 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    width: 42,
+    height: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: { backgroundColor: colors.primarySoft },
+});

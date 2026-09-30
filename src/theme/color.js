@@ -1,26 +1,32 @@
 export const colors = {
   background: '#F4F1E8',
-  surface: '#FCFBF7',
-  surfaceMuted: '#ECE8DD',
+  surface: '#FFFEFB',
+  surfaceMuted: '#EEE9DE',
   white: '#FFFFFF',
 
-  text: '#20231F',
-  subText: '#5F635B',
-  muted: '#696C64',
-  border: '#D9D4C8',
+  text: '#25231F',
+  subText: '#4E4032',
+  muted: '#70604C',
+  border: '#D8D0C1',
 
   primary: '#315C4C',
-  primaryDark: '#244538',
-  primarySoft: '#DCE7E0',
-  accent: '#D39B44',
-  accentSoft: '#F2E3C7',
+  primaryDark: '#173F31',
+  primaryHover: '#254C3D',
+  primaryPressed: '#1D4033',
+  primarySoft: '#E4EEE7',
+  primarySoftHover: '#D5E7DB',
+  accent: '#F4B93C',
+  accentSoft: '#FFF1CB',
 
-  success: '#3F674F',
-  successSoft: '#DDE9E1',
-  warning: '#81531E',
-  warningSoft: '#F3E5CF',
-  danger: '#96453B',
-  dangerSoft: '#F3DFDB',
+  surfaceHover: '#F8F5ED',
+  surfacePressed: '#F0EADF',
+
+  easy: '#2858A6',
+  easySoft: '#E6EEFF',
+  warning: '#825000',
+  warningSoft: '#FFF0C8',
+  danger: '#AA3437',
+  dangerSoft: '#FCE8E5',
 };
 
 export const spacing = {
@@ -37,8 +43,8 @@ export const spacing = {
 export const radius = {
   sm: 8,
   md: 12,
-  lg: 18,
-  xl: 24,
+  lg: 16,
+  xl: 20,
   pill: 999,
 };
 
@@ -50,9 +56,9 @@ export const type = {
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 30,
-    lineHeight: 38,
-    fontWeight: '800',
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: '700',
     letterSpacing: -0.8,
   },
   section: {
@@ -68,15 +74,5 @@ export const type = {
   caption: {
     fontSize: 13,
     lineHeight: 18,
-  },
-};
-
-export const shadow = {
-  card: {
-    shadowColor: '#20231F',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
   },
 };

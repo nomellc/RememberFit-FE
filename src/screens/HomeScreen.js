@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import BrandMark from '../components/BrandMark';
 import EmptyState from '../components/EmptyState';
+import FeedbackPressable from '../components/FeedbackPressable';
 import RequestErrorState from '../components/RequestErrorState';
 import { getDecks, getStudyStatistics } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
@@ -87,16 +87,13 @@ export default function HomeScreen({ navigation }) {
       >
         <View style={styles.brandRow}>
           <BrandMark />
-          <View>
-            <Text style={styles.brandName}>REMEMBERFIT</Text>
-            <Text style={styles.brandCaption}>기억을 만드는 작은 루틴</Text>
-          </View>
+          <Text style={styles.brandName}>REMEMBERFIT</Text>
         </View>
 
         <View style={styles.intro}>
           <Text style={styles.date}>{todayLabel}</Text>
           <Text accessibilityRole="header" style={styles.title}>
-            오늘의 기억을{`\n`}가볍게 이어가요.
+            오늘 할 복습
           </Text>
         </View>
 
@@ -117,67 +114,63 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.statsStrip}>
             <StatItem value={stats.newCount || 0} label="새 카드" tone={colors.primary} />
             <StatItem value={reviewCount} label="복습 예정" tone={colors.warning} />
-            <StatItem value={stats.doneCount || 0} label="기억 완료" tone={colors.success} last />
+            <StatItem value={stats.doneCount || 0} label="기억 완료" tone={colors.text} last />
           </View>
         )}
 
         {!loadError && (
           <>
-            <TouchableOpacity
+            <FeedbackPressable
               accessibilityLabel="오늘 학습 시작하기"
               accessibilityRole="button"
-              activeOpacity={0.88}
+              baseColor={colors.primary}
+              hoverColor={colors.primaryHover}
+              pressedColor={colors.primaryPressed}
               style={styles.studyCard}
               onPress={() => navigation.navigate('Decks', { screen: 'DeckList' })}
             >
               <View style={styles.studyCardCopy}>
-                <Text style={styles.studyEyebrow}>TODAY'S SESSION</Text>
                 <Text style={styles.studyTitle}>오늘 학습 시작하기</Text>
-                <Text style={styles.studySubtitle}>
-                  {reviewCount > 0
-                    ? `${reviewCount}장의 카드가 복습을 기다리고 있어요.`
-                    : '새 암기장을 열고 첫 카드를 만들어보세요.'}
-                </Text>
               </View>
               <View style={styles.arrowButton}>
-                <MaterialCommunityIcons name="arrow-right" size={22} color={colors.primaryDark} />
+                <MaterialCommunityIcons name="arrow-right" size={22} color={colors.primary} />
               </View>
-              <View style={styles.studyCardAccent} />
-            </TouchableOpacity>
+            </FeedbackPressable>
 
             <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionEyebrow}>RECENT</Text>
-                <Text accessibilityRole="header" style={styles.sectionTitle}>최근 암기장</Text>
-              </View>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>최근 암기장</Text>
               {recentDecks.length > 0 && (
-                <TouchableOpacity
+                <FeedbackPressable
                   accessibilityLabel="전체 암기장 보기"
                   accessibilityRole="button"
+                  baseColor={colors.background}
+                  hoverColor={colors.surfaceHover}
+                  pressedColor={colors.surfacePressed}
                   onPress={() => navigation.navigate('Decks')}
                   style={styles.allLinkButton}
                 >
                   <Text style={styles.allLink}>전체 보기</Text>
-                </TouchableOpacity>
+                </FeedbackPressable>
               )}
             </View>
 
             {recentDecks.length === 0 && !isLoading ? (
               <EmptyState
                 icon="notebook-outline"
-                title="아직 암기장이 없어요"
-                description="배우고 싶은 주제로 첫 암기장을 만들어보세요."
+                title="암기장이 없습니다"
                 actionLabel="암기장 만들기"
                 onAction={() => navigation.navigate('Decks')}
               />
             ) : (
               <View style={styles.deckList}>
-                {recentDecks.map((deck, index) => (
-                  <TouchableOpacity
+                {recentDecks.map((deck) => (
+                  <FeedbackPressable
                     accessibilityLabel={`${deck.title}, 카드 ${deck.cardCount || 0}장`}
                     accessibilityHint="카드 목록을 엽니다"
                     accessibilityRole="button"
-                    activeOpacity={0.75}
+                    baseColor={colors.background}
+                    hoverColor={colors.surfaceHover}
+                    pressedColor={colors.surfacePressed}
                     key={deck.id}
                     style={styles.deckRow}
                     onPress={() =>
@@ -187,15 +180,14 @@ export default function HomeScreen({ navigation }) {
                       })
                     }
                   >
-                    <Text style={styles.deckIndex}>{String(index + 1).padStart(2, '0')}</Text>
                     <View style={styles.deckInfo}>
                       <Text numberOfLines={1} style={styles.deckTitle}>
                         {deck.title}
                       </Text>
                       <Text style={styles.deckCount}>{deck.cardCount || 0}장의 카드</Text>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.muted} />
-                  </TouchableOpacity>
+                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.subText} />
+                  </FeedbackPressable>
                 ))}
               </View>
             )}
@@ -218,9 +210,8 @@ const styles = StyleSheet.create({
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   brandName: { ...type.eyebrow, color: colors.text, letterSpacing: 1.6 },
-  brandCaption: { ...type.caption, color: colors.subText, marginTop: 2 },
   intro: { marginTop: spacing.xxxl, marginBottom: spacing.xxl },
-  date: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
+  date: { ...type.body, fontWeight: '600', color: colors.subText, marginBottom: spacing.xs },
   title: { ...type.title, color: colors.text },
   loadingBox: {
     height: 92,
@@ -235,51 +226,37 @@ const styles = StyleSheet.create({
   },
   loadingText: { ...type.caption, color: colors.subText },
   statsStrip: {
-    minHeight: 92,
+    minHeight: 86,
     paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
   },
   statItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   statDivider: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
-  statValue: { fontSize: 24, lineHeight: 30, fontWeight: '800', letterSpacing: -0.5 },
+  statValue: { fontSize: 24, lineHeight: 30, fontWeight: '700', letterSpacing: -0.5 },
   statLabel: { ...type.caption, color: colors.subText, marginTop: 2 },
   studyCard: {
-    minHeight: 174,
+    minHeight: 98,
     marginTop: spacing.lg,
-    padding: spacing.xxl,
+    padding: spacing.xl,
     borderRadius: radius.xl,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
     overflow: 'hidden',
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
-  studyCardCopy: { flex: 1, paddingRight: spacing.lg, zIndex: 1 },
-  studyEyebrow: { ...type.eyebrow, color: '#BFD0C7' },
-  studyTitle: { fontSize: 22, lineHeight: 29, fontWeight: '700', color: colors.surface, marginTop: spacing.sm },
-  studySubtitle: { ...type.caption, color: '#CFD9D3', marginTop: spacing.sm, maxWidth: 250 },
+  studyCardCopy: { flex: 1, paddingRight: spacing.lg },
+  studyTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700', color: colors.surface },
   arrowButton: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: radius.pill,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
-  },
-  studyCardAccent: {
-    position: 'absolute',
-    width: 130,
-    height: 130,
-    borderWidth: 24,
-    borderColor: 'rgba(255,255,255,0.055)',
-    borderRadius: radius.pill,
-    right: -35,
-    top: -45,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -288,11 +265,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxxl,
     marginBottom: spacing.md,
   },
-  sectionEyebrow: { ...type.eyebrow, color: colors.muted, marginBottom: 3 },
   sectionTitle: { ...type.section, color: colors.text },
   allLink: { ...type.caption, color: colors.primary, fontWeight: '700', paddingVertical: spacing.xs },
-  allLinkButton: { minHeight: 44, justifyContent: 'center' },
-  deckList: { borderTopWidth: 1, borderTopColor: colors.text },
+  allLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.sm, borderRadius: radius.sm },
+  deckList: { borderTopWidth: 1, borderTopColor: colors.border },
   deckRow: {
     minHeight: 76,
     flexDirection: 'row',
@@ -300,7 +276,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  deckIndex: { width: 40, ...type.caption, color: colors.muted, fontVariant: ['tabular-nums'] },
   deckInfo: { flex: 1 },
   deckTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },

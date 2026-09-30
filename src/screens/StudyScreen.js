@@ -3,25 +3,26 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EmptyState from '../components/EmptyState';
+import FeedbackPressable from '../components/FeedbackPressable';
 import RequestErrorState from '../components/RequestErrorState';
 import { getDueCards, gradeCard } from '../api';
-import { colors, radius, shadow, spacing, type } from '../theme/color';
+import { colors, radius, spacing, type } from '../theme/color';
 
 const ratingOptions = [
-  { quality: 1, label: '다시', caption: '아직 낯설어요', color: colors.dangerSoft, textColor: colors.danger },
-  { quality: 3, label: '어려움', caption: '조금 헷갈려요', color: colors.warningSoft, textColor: colors.warning },
-  { quality: 4, label: '알맞음', caption: '기억이 났어요', color: colors.primarySoft, textColor: colors.primary },
-  { quality: 5, label: '쉬움', caption: '바로 떠올랐어요', color: colors.success, textColor: colors.surface },
+  { quality: 1, label: '다시', color: colors.danger, background: colors.dangerSoft, hover: '#F8D9D5', icon: 'refresh' },
+  { quality: 3, label: '어려움', color: colors.warning, background: colors.warningSoft, hover: '#FFE4AB', icon: 'alert-circle-outline' },
+  { quality: 4, label: '알맞음', color: colors.primary, background: colors.primarySoft, hover: colors.primarySoftHover, icon: 'check' },
+  { quality: 5, label: '쉬움', color: colors.easy, background: colors.easySoft, hover: '#D5E3FC', icon: 'lightning-bolt-outline' },
 ];
 
 export default function StudyScreen({ route, navigation }) {
@@ -60,7 +61,7 @@ export default function StudyScreen({ route, navigation }) {
       toValue: isFlipped ? 0 : 1,
       friction: 9,
       tension: 46,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
     setIsFlipped((current) => !current);
   };
@@ -111,14 +112,17 @@ export default function StudyScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.emptyScreen}>
         <View style={styles.emptyHeader}>
-          <TouchableOpacity
+          <FeedbackPressable
             accessibilityLabel="학습 화면 닫기"
             accessibilityRole="button"
+            baseColor={colors.surface}
+            hoverColor={colors.surfaceHover}
+            pressedColor={colors.surfacePressed}
             onPress={() => navigation.goBack()}
             style={styles.closeButton}
           >
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
+          </FeedbackPressable>
         </View>
         <View style={styles.emptyBody}>
           <RequestErrorState error={loadError} onRetry={loadStudyCards} />
@@ -131,20 +135,22 @@ export default function StudyScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.emptyScreen}>
         <View style={styles.emptyHeader}>
-          <TouchableOpacity
+          <FeedbackPressable
             accessibilityLabel="학습 화면 닫기"
             accessibilityRole="button"
+            baseColor={colors.surface}
+            hoverColor={colors.surfaceHover}
+            pressedColor={colors.surfacePressed}
             onPress={() => navigation.goBack()}
             style={styles.closeButton}
           >
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
+          </FeedbackPressable>
         </View>
         <View style={styles.emptyBody}>
           <EmptyState
             icon="check-circle-outline"
             title="오늘 복습은 모두 끝났어요"
-            description="다음 복습 일정이 생기면 이곳에서 다시 만날 수 있어요."
             actionLabel="암기장으로 돌아가기"
             onAction={() => navigation.goBack()}
           />
@@ -168,14 +174,17 @@ export default function StudyScreen({ route, navigation }) {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <TouchableOpacity
+          <FeedbackPressable
             accessibilityLabel="학습 화면 닫기"
             accessibilityRole="button"
+            baseColor={colors.surface}
+            hoverColor={colors.surfaceHover}
+            pressedColor={colors.surfacePressed}
             onPress={() => navigation.goBack()}
             style={styles.closeButton}
           >
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
+          </FeedbackPressable>
           <View style={styles.headerCopy}>
             <Text accessibilityRole="header" numberOfLines={1} style={styles.deckTitle}>
               {deckTitle}
@@ -201,11 +210,6 @@ export default function StudyScreen({ route, navigation }) {
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
 
-        <View style={styles.promptRow}>
-          <Text style={styles.promptEyebrow}>{isFlipped ? 'ANSWER' : 'QUESTION'}</Text>
-          <Text style={styles.promptHint}>{isFlipped ? '기억과 비교해보세요' : '먼저 답을 떠올려보세요'}</Text>
-        </View>
-
         <Pressable
           accessibilityHint={isFlipped ? '두 번 눌러 질문을 봅니다' : '두 번 눌러 답을 확인합니다'}
           accessibilityLabel={`${isFlipped ? '답' : '질문'}: ${
@@ -226,7 +230,6 @@ export default function StudyScreen({ route, navigation }) {
               { transform: [{ perspective: 1000 }, { rotateY: frontRotate }] },
             ]}
           >
-            <View style={styles.cardCorner} />
             <Text style={styles.cardSideLabel}>앞면</Text>
             <ScrollView
               contentContainerStyle={styles.cardScrollContent}
@@ -251,7 +254,6 @@ export default function StudyScreen({ route, navigation }) {
               { transform: [{ perspective: 1000 }, { rotateY: backRotate }] },
             ]}
           >
-            <View style={[styles.cardCorner, styles.answerCorner]} />
             <Text style={[styles.cardSideLabel, styles.answerLabel]}>뒷면</Text>
             <ScrollView
               contentContainerStyle={styles.cardScrollContent}
@@ -274,28 +276,25 @@ export default function StudyScreen({ route, navigation }) {
               <Text style={styles.ratingTitle}>얼마나 잘 기억했나요?</Text>
               <View style={styles.ratingGrid}>
                 {ratingOptions.map((option) => (
-                  <TouchableOpacity
-                    accessibilityLabel={`${option.label}, ${option.caption}`}
+                  <FeedbackPressable
+                    accessibilityLabel={option.label}
                     accessibilityRole="button"
                     accessibilityState={{ busy: isSubmitting, disabled: isSubmitting }}
-                    activeOpacity={0.78}
+                    baseColor={option.background}
+                    hoverColor={option.hover}
+                    pressedColor={option.hover}
                     disabled={isSubmitting}
                     key={option.quality}
                     onPress={() => handleRate(option.quality)}
-                    style={[styles.ratingButton, { backgroundColor: option.color }]}
+                    style={[styles.ratingButton, { borderColor: option.color }]}
                   >
-                    <Text style={[styles.ratingLabel, { color: option.textColor }]}>{option.label}</Text>
-                    <Text style={[styles.ratingCaption, { color: option.textColor }]}>{option.caption}</Text>
-                  </TouchableOpacity>
+                    <MaterialCommunityIcons name={option.icon} size={21} color={option.color} />
+                    <Text style={[styles.ratingLabel, { color: option.color }]}>{option.label}</Text>
+                  </FeedbackPressable>
                 ))}
               </View>
             </>
-          ) : (
-            <View style={styles.recallNote}>
-              <MaterialCommunityIcons name="lightbulb-outline" size={20} color={colors.warning} />
-              <Text style={styles.recallText}>소리 내어 답한 뒤 카드를 뒤집으면 더 오래 기억할 수 있어요.</Text>
-            </View>
-          )}
+          ) : null}
         </View>
       </View>
       {isSubmitting && (
@@ -348,49 +347,39 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 44 },
   progressTrack: { height: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted },
   progressFill: { height: 3, borderRadius: radius.pill, backgroundColor: colors.primary },
-  promptRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xxl,
-    marginBottom: spacing.md,
-  },
-  promptEyebrow: { ...type.eyebrow, color: colors.primary },
-  promptHint: { ...type.caption, color: colors.subText },
-  cardContainer: { flex: 1, minHeight: 240, maxHeight: 430 },
+  cardContainer: { flex: 1, minHeight: 240, maxHeight: 430, marginTop: spacing.xxl },
   card: {
     ...StyleSheet.absoluteFillObject,
     padding: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.xl,
     backgroundColor: colors.surface,
     backfaceVisibility: 'hidden',
-    ...shadow.card,
+    ...Platform.select({
+      web: { boxShadow: '0 5px 14px rgba(37, 35, 31, 0.06)' },
+      default: {
+        shadowColor: colors.text,
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.06,
+        shadowRadius: 14,
+        elevation: 2,
+      },
+    }),
   },
   frontCard: { backgroundColor: colors.surface },
-  backCard: { backgroundColor: '#F8F3E8' },
-  cardCorner: {
-    position: 'absolute',
-    width: 72,
-    height: 72,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-    right: -24,
-    top: -24,
-  },
-  answerCorner: { backgroundColor: colors.accentSoft },
+  backCard: { backgroundColor: '#FFF9EB' },
   cardSideLabel: {
     position: 'absolute',
     top: spacing.xxl,
     left: spacing.xxl,
     ...type.eyebrow,
-    color: colors.primary,
+    color: colors.subText,
   },
-  answerLabel: { color: colors.warning },
+  answerLabel: { color: colors.subText },
   cardScroll: { width: '100%', marginVertical: 48 },
   cardScrollContent: {
     flexGrow: 1,
@@ -420,22 +409,16 @@ const styles = StyleSheet.create({
   ratingGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
   ratingButton: {
     width: '49%',
-    minHeight: 64,
+    minHeight: 62,
     paddingHorizontal: spacing.md,
-    justifyContent: 'center',
-    borderRadius: radius.md,
-  },
-  ratingLabel: { fontSize: 14, fontWeight: '800' },
-  ratingCaption: { fontSize: 11, marginTop: 2, opacity: 0.86 },
-  recallNote: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderRadius: radius.lg,
   },
-  recallText: { flex: 1, ...type.caption, color: colors.text },
+  ratingLabel: { fontSize: 15, fontWeight: '700' },
   submittingOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',

@@ -8,12 +8,12 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import EmptyState from '../components/EmptyState';
+import FeedbackPressable from '../components/FeedbackPressable';
 import RequestErrorState from '../components/RequestErrorState';
 import { deleteCard, getCards } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
@@ -90,30 +90,30 @@ export default function CardListScreen({ route, navigation }) {
     navigation.setOptions({
       title: deckTitle,
       headerRight: () => (
-        <TouchableOpacity
+        <FeedbackPressable
           accessibilityLabel="학습 시작"
           accessibilityRole="button"
           accessibilityState={{ disabled: cards.length === 0 }}
-          activeOpacity={0.75}
+          baseColor={colors.primary}
+          hoverColor={colors.primaryHover}
+          pressedColor={colors.primaryPressed}
           disabled={cards.length === 0}
           onPress={() => navigation.navigate('Study', { deckId, deckTitle })}
           style={[styles.headerAction, cards.length === 0 && styles.headerActionDisabled]}
         >
           <MaterialCommunityIcons name="play" size={15} color={colors.surface} />
           <Text style={styles.headerActionText}>학습</Text>
-        </TouchableOpacity>
+        </FeedbackPressable>
       ),
     });
   }, [cards.length, deckId, deckTitle, navigation]);
 
   const renderHeader = () => (
     <View style={styles.heading}>
-      <Text style={styles.eyebrow}>FLASH CARDS</Text>
-      <Text accessibilityRole="header" style={styles.title}>{deckTitle}</Text>
-      <Text style={styles.subtitle}>카드 {cards.length}장 · 앞면을 떠올린 뒤 뒷면으로 확인하세요.</Text>
+      <Text accessibilityRole="header" style={styles.countTitle}>카드 {cards.length}장</Text>
       {cards.length > 0 && (
         <View style={styles.searchBox}>
-          <MaterialCommunityIcons name="magnify" size={20} color={colors.muted} />
+          <MaterialCommunityIcons name="magnify" size={20} color={colors.subText} />
           <TextInput
             accessibilityLabel="카드 검색"
             autoCapitalize="none"
@@ -126,20 +126,23 @@ export default function CardListScreen({ route, navigation }) {
             value={query}
           />
           {!!query && (
-            <TouchableOpacity
+            <FeedbackPressable
               accessibilityLabel="검색어 지우기"
               accessibilityRole="button"
+              baseColor="rgba(0, 0, 0, 0)"
+              hoverColor={colors.surfacePressed}
+              pressedColor={colors.border}
               onPress={() => setQuery('')}
               style={styles.clearButton}
             >
               <MaterialCommunityIcons name="close-circle" size={19} color={colors.muted} />
-            </TouchableOpacity>
+            </FeedbackPressable>
           )}
         </View>
       )}
       {!!query.trim() && (
         <Text accessibilityLiveRegion="polite" style={styles.searchResult}>
-          {filteredCards.length}개의 카드를 찾았어요.
+          검색 결과 {filteredCards.length}장
         </Text>
       )}
       {!!loadError && cards.length > 0 && (
@@ -148,30 +151,33 @@ export default function CardListScreen({ route, navigation }) {
     </View>
   );
 
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({ item }) => (
     <View style={styles.cardItem}>
       <View style={styles.cardTopRow}>
-        <Text style={styles.cardIndex}>{String(index + 1).padStart(2, '0')}</Text>
+        <Text style={styles.frontLabelText}>앞면</Text>
         <View style={styles.cardActions}>
-          <View style={styles.frontLabel}>
-            <Text style={styles.frontLabelText}>앞면</Text>
-          </View>
-          <TouchableOpacity
+          <FeedbackPressable
             accessibilityLabel={`${item.frontText} 카드 수정`}
             accessibilityRole="button"
+            baseColor="rgba(0, 0, 0, 0)"
+            hoverColor={colors.surfacePressed}
+            pressedColor={colors.border}
             hitSlop={6}
             onPress={() => goToEditCard(item)}
             style={styles.iconButton}
           >
-            <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
+            <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.subText} />
+          </FeedbackPressable>
+          <FeedbackPressable
             accessibilityLabel={`${item.frontText} 카드 삭제`}
             accessibilityRole="button"
             accessibilityState={{
               busy: deletingCardId === item.id,
               disabled: deletingCardId === item.id,
             }}
+            baseColor="rgba(0, 0, 0, 0)"
+            hoverColor={colors.dangerSoft}
+            pressedColor="#F5D7D3"
             disabled={deletingCardId === item.id}
             hitSlop={6}
             onPress={() => handleDelete(item)}
@@ -182,7 +188,7 @@ export default function CardListScreen({ route, navigation }) {
             ) : (
               <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.danger} />
             )}
-          </TouchableOpacity>
+          </FeedbackPressable>
         </View>
       </View>
       <Text style={styles.frontText}>{item.frontText}</Text>
@@ -210,8 +216,7 @@ export default function CardListScreen({ route, navigation }) {
           ) : cards.length === 0 ? (
             <EmptyState
               icon="card-plus-outline"
-              title="첫 카드를 추가해보세요"
-              description="질문과 답을 한 장씩 쌓으면 나만의 복습 루틴이 시작돼요."
+              title="카드가 없습니다"
               actionLabel="카드 추가"
               onAction={goToAddCard}
             />
@@ -219,7 +224,6 @@ export default function CardListScreen({ route, navigation }) {
             <EmptyState
               icon="magnify"
               title="검색 결과가 없어요"
-              description="검색어를 줄이거나 앞면과 뒷면의 다른 단어로 찾아보세요."
               actionLabel="검색어 지우기"
               onAction={() => setQuery('')}
             />
@@ -242,16 +246,18 @@ export default function CardListScreen({ route, navigation }) {
       />
 
       {cards.length > 0 && (
-        <TouchableOpacity
+        <FeedbackPressable
           accessibilityLabel="새 카드 추가"
           accessibilityRole="button"
-          activeOpacity={0.85}
+          baseColor={colors.primary}
+          hoverColor={colors.primaryHover}
+          pressedColor={colors.primaryPressed}
           onPress={goToAddCard}
           style={styles.fab}
         >
           <MaterialCommunityIcons name="plus" size={20} color={colors.surface} />
           <Text style={styles.fabText}>새 카드</Text>
-        </TouchableOpacity>
+        </FeedbackPressable>
       )}
     </View>
   );
@@ -268,9 +274,7 @@ const styles = StyleSheet.create({
   },
   emptyContent: { flexGrow: 1 },
   heading: { paddingTop: spacing.xxl, paddingBottom: spacing.xxl },
-  eyebrow: { ...type.eyebrow, color: colors.primary, marginBottom: spacing.sm },
-  title: { ...type.title, color: colors.text },
-  subtitle: { ...type.body, color: colors.subText, marginTop: spacing.sm },
+  countTitle: { ...type.section, color: colors.text },
   searchBox: {
     height: 50,
     flexDirection: 'row',
@@ -307,21 +311,14 @@ const styles = StyleSheet.create({
   cardItem: {
     padding: spacing.xl,
     marginBottom: spacing.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  cardIndex: { ...type.caption, color: colors.muted, fontVariant: ['tabular-nums'] },
-  frontLabel: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primarySoft,
-  },
-  frontLabelText: { fontSize: 11, color: colors.primary, fontWeight: '800' },
+  frontLabelText: { fontSize: 13, color: colors.subText, fontWeight: '700' },
   iconButton: {
     width: 44,
     height: 44,
@@ -338,8 +335,8 @@ const styles = StyleSheet.create({
   },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.lg },
   answerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  backLabel: { ...type.caption, color: colors.warning, fontWeight: '800', width: 36 },
-  backText: { flex: 1, ...type.body, color: colors.subText },
+  backLabel: { ...type.caption, color: colors.subText, fontWeight: '700', width: 36 },
+  backText: { flex: 1, ...type.body, color: colors.text },
   fab: {
     position: 'absolute',
     right: spacing.xl,
@@ -350,7 +347,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
   },
   fabText: { color: colors.surface, fontSize: 14, fontWeight: '700' },
 });
