@@ -19,10 +19,10 @@ import { getDueCards, gradeCard } from '../api';
 import { colors, radius, spacing, type } from '../theme/color';
 
 const ratingOptions = [
-  { quality: 1, label: '다시', color: colors.danger, background: colors.dangerSoft, hover: '#F8D9D5', icon: 'refresh' },
-  { quality: 3, label: '어려움', color: colors.warning, background: colors.warningSoft, hover: '#FFE4AB', icon: 'alert-circle-outline' },
-  { quality: 4, label: '알맞음', color: colors.primary, background: colors.primarySoft, hover: colors.primarySoftHover, icon: 'check' },
-  { quality: 5, label: '쉬움', color: colors.easy, background: colors.easySoft, hover: '#D5E3FC', icon: 'lightning-bolt-outline' },
+  { quality: 1, label: '다시', borderColor: colors.danger, textColor: colors.dangerText },
+  { quality: 3, label: '어려움', borderColor: '#D97706', textColor: colors.warningText },
+  { quality: 4, label: '알맞음', borderColor: colors.good, textColor: colors.goodText },
+  { quality: 5, label: '쉬움', borderColor: colors.easy, textColor: colors.easyText },
 ];
 
 export default function StudyScreen({ route, navigation }) {
@@ -210,98 +210,106 @@ export default function StudyScreen({ route, navigation }) {
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
 
-        <Pressable
-          accessibilityHint={isFlipped ? '두 번 눌러 질문을 봅니다' : '두 번 눌러 답을 확인합니다'}
-          accessibilityLabel={`${isFlipped ? '답' : '질문'}: ${
-            isFlipped ? currentCard.backText : currentCard.frontText
-          }`}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: isSubmitting }}
-          disabled={isSubmitting}
-          onPress={handleFlip}
-          style={styles.cardContainer}
-        >
-          <Animated.View
-            accessibilityElementsHidden={isFlipped}
-            importantForAccessibility={isFlipped ? 'no-hide-descendants' : 'yes'}
-            style={[
-              styles.card,
-              styles.frontCard,
-              { transform: [{ perspective: 1000 }, { rotateY: frontRotate }] },
-            ]}
-          >
-            <Text style={styles.cardSideLabel}>앞면</Text>
-            <ScrollView
-              contentContainerStyle={styles.cardScrollContent}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-              style={styles.cardScroll}
+        <View style={styles.cardStage}>
+          <View style={styles.cardContainer} testID="study-card-container">
+            <Animated.View
+              testID="study-card-front"
+              accessibilityElementsHidden={isFlipped}
+              aria-hidden={isFlipped}
+              importantForAccessibility={isFlipped ? 'no-hide-descendants' : 'yes'}
+              pointerEvents={Platform.OS === 'web' ? undefined : isFlipped ? 'none' : 'auto'}
+              style={[
+                StyleSheet.absoluteFill,
+                styles.card,
+                Platform.OS === 'web' && { pointerEvents: isFlipped ? 'none' : 'auto' },
+                { transform: [{ perspective: 1000 }, { rotateY: frontRotate }] },
+              ]}
             >
-              <Text style={styles.cardText}>{currentCard.frontText}</Text>
-            </ScrollView>
-            <View style={styles.flipHint}>
-              <MaterialCommunityIcons name="gesture-tap" size={18} color={colors.subText} />
-              <Text style={styles.flipHintText}>눌러서 답 확인</Text>
-            </View>
-          </Animated.View>
+              <Pressable
+                accessibilityHint="두 번 눌러 답을 확인합니다"
+                accessibilityLabel={`질문: ${currentCard.frontText}`}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isFlipped || isSubmitting }}
+                disabled={isFlipped || isSubmitting}
+                onPress={handleFlip}
+                style={styles.facePressArea}
+              >
+                <Text style={styles.cardSideLabel}>앞면</Text>
+                <ScrollView
+                  contentContainerStyle={styles.cardScrollContent}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                  style={styles.cardScroll}
+                >
+                  <Text style={styles.cardText}>{currentCard.frontText}</Text>
+                </ScrollView>
+                <Text style={styles.flipHintText}>탭하여 답 보기</Text>
+              </Pressable>
+            </Animated.View>
 
-          <Animated.View
-            accessibilityElementsHidden={!isFlipped}
-            importantForAccessibility={!isFlipped ? 'no-hide-descendants' : 'yes'}
-            style={[
-              styles.card,
-              styles.backCard,
-              { transform: [{ perspective: 1000 }, { rotateY: backRotate }] },
-            ]}
-          >
-            <Text style={[styles.cardSideLabel, styles.answerLabel]}>뒷면</Text>
-            <ScrollView
-              contentContainerStyle={styles.cardScrollContent}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-              style={styles.cardScroll}
+            <Animated.View
+              testID="study-card-back"
+              accessibilityElementsHidden={!isFlipped}
+              aria-hidden={!isFlipped}
+              importantForAccessibility={!isFlipped ? 'no-hide-descendants' : 'yes'}
+              pointerEvents={Platform.OS === 'web' ? undefined : isFlipped ? 'auto' : 'none'}
+              style={[
+                StyleSheet.absoluteFill,
+                styles.card,
+                Platform.OS === 'web' && { pointerEvents: isFlipped ? 'auto' : 'none' },
+                { transform: [{ perspective: 1000 }, { rotateY: backRotate }] },
+              ]}
             >
-              <Text style={styles.cardText}>{currentCard.backText}</Text>
-            </ScrollView>
-            <View style={styles.flipHint}>
-              <MaterialCommunityIcons name="rotate-3d-variant" size={18} color={colors.subText} />
-              <Text style={styles.flipHintText}>눌러서 질문 보기</Text>
-            </View>
-          </Animated.View>
-        </Pressable>
-
-        <View style={styles.ratingArea}>
-          {isFlipped ? (
-            <>
-              <Text style={styles.ratingTitle}>얼마나 잘 기억했나요?</Text>
-              <View style={styles.ratingGrid}>
-                {ratingOptions.map((option) => (
-                  <FeedbackPressable
-                    accessibilityLabel={option.label}
-                    accessibilityRole="button"
-                    accessibilityState={{ busy: isSubmitting, disabled: isSubmitting }}
-                    baseColor={option.background}
-                    hoverColor={option.hover}
-                    pressedColor={option.hover}
-                    disabled={isSubmitting}
-                    key={option.quality}
-                    onPress={() => handleRate(option.quality)}
-                    style={[styles.ratingButton, { borderColor: option.color }]}
-                  >
-                    <MaterialCommunityIcons name={option.icon} size={21} color={option.color} />
-                    <Text style={[styles.ratingLabel, { color: option.color }]}>{option.label}</Text>
-                  </FeedbackPressable>
-                ))}
+              <Pressable
+                accessibilityHint="두 번 눌러 질문을 봅니다"
+                accessibilityLabel={`답: ${currentCard.backText}`}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !isFlipped || isSubmitting }}
+                disabled={!isFlipped || isSubmitting}
+                onPress={handleFlip}
+                style={styles.facePressArea}
+              >
+                <Text style={styles.cardSideLabel}>뒷면</Text>
+                <ScrollView
+                  contentContainerStyle={styles.cardScrollContent}
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                  style={styles.cardScroll}
+                >
+                  <Text style={styles.cardText}>{currentCard.backText}</Text>
+                </ScrollView>
+                <Text style={styles.flipHintText}>탭하여 질문 보기</Text>
+              </Pressable>
+              <View style={styles.ratingSection}>
+                <Text style={styles.ratingTitle}>기억 정도</Text>
+                <View style={styles.ratingGrid}>
+                  {ratingOptions.map((option) => (
+                    <FeedbackPressable
+                      accessibilityLabel={option.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ busy: isSubmitting, disabled: !isFlipped || isSubmitting }}
+                      baseColor={colors.surface}
+                      hoverColor={colors.surfaceHover}
+                      pressedColor={colors.surfacePressed}
+                      disabled={!isFlipped || isSubmitting}
+                      key={option.quality}
+                      onPress={() => handleRate(option.quality)}
+                      style={[styles.ratingButton, { borderColor: option.borderColor }]}
+                    >
+                      <Text style={[styles.ratingLabel, { color: option.textColor }]}>{option.label}</Text>
+                    </FeedbackPressable>
+                  ))}
+                </View>
               </View>
-            </>
-          ) : null}
+            </Animated.View>
+          </View>
         </View>
       </View>
       {isSubmitting && (
         <View
           accessibilityLabel="학습 기록 저장 중"
           accessibilityLiveRegion="polite"
-          style={styles.submittingOverlay}
+          style={[StyleSheet.absoluteFill, styles.submittingOverlay]}
         >
           <ActivityIndicator color={colors.surface} />
         </View>
@@ -338,7 +346,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.pill,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
   },
   headerCopy: { flex: 1, alignItems: 'center', paddingHorizontal: spacing.md },
@@ -347,80 +355,60 @@ const styles = StyleSheet.create({
   headerSpacer: { width: 44 },
   progressTrack: { height: 3, borderRadius: radius.pill, backgroundColor: colors.surfaceMuted },
   progressFill: { height: 3, borderRadius: radius.pill, backgroundColor: colors.primary },
-  cardContainer: { flex: 1, minHeight: 240, maxHeight: 430, marginTop: spacing.xxl },
+  cardStage: { flex: 1, justifyContent: 'center', paddingVertical: spacing.lg },
+  cardContainer: { flex: 1, width: '100%', maxHeight: 560 },
   card: {
-    ...StyleSheet.absoluteFillObject,
-    padding: spacing.xxl,
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     backfaceVisibility: 'hidden',
-    ...Platform.select({
-      web: { boxShadow: '0 5px 14px rgba(37, 35, 31, 0.06)' },
-      default: {
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.06,
-        shadowRadius: 14,
-        elevation: 2,
-      },
-    }),
   },
-  frontCard: { backgroundColor: colors.surface },
-  backCard: { backgroundColor: '#FFF9EB' },
+  facePressArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cardSideLabel: {
     position: 'absolute',
-    top: spacing.xxl,
-    left: spacing.xxl,
-    ...type.eyebrow,
+    top: spacing.xl,
+    left: spacing.xl,
+    ...type.caption,
+    fontWeight: '600',
     color: colors.subText,
   },
-  answerLabel: { color: colors.subText },
-  cardScroll: { width: '100%', marginVertical: 48 },
+  cardScroll: { flex: 1, width: '100%', marginTop: 48, marginBottom: 48 },
   cardScrollContent: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xxl,
   },
   cardText: {
     maxWidth: '92%',
     color: colors.text,
-    fontSize: 27,
-    lineHeight: 39,
-    fontWeight: '700',
+    fontSize: 28,
+    lineHeight: 40,
+    fontWeight: '600',
     letterSpacing: -0.45,
     textAlign: 'center',
   },
-  flipHint: {
-    position: 'absolute',
-    bottom: spacing.xxl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  flipHintText: { ...type.caption, color: colors.subText, position: 'absolute', bottom: spacing.xl },
+  ratingSection: {
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  flipHintText: { ...type.caption, color: colors.subText },
-  ratingArea: { minHeight: 178, paddingTop: spacing.xl },
-  ratingTitle: { fontSize: 15, color: colors.text, fontWeight: '700', marginBottom: spacing.md },
+  ratingTitle: { fontSize: 14, lineHeight: 20, color: colors.subText, marginBottom: spacing.sm },
   ratingGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
   ratingButton: {
     width: '49%',
-    minHeight: 62,
+    minHeight: 48,
     paddingHorizontal: spacing.md,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
     borderWidth: 1,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
   },
-  ratingLabel: { fontSize: 15, fontWeight: '700' },
+  ratingLabel: { fontSize: 15, fontWeight: '600' },
   submittingOverlay: {
-    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(32, 35, 31, 0.18)',

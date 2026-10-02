@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   fieldGroup: {
     marginBottom: spacing.xxl,
   },
-  label: { fontSize: 16, color: colors.text, fontWeight: '700', marginBottom: spacing.sm },
+  label: { fontSize: 15, color: colors.text, fontWeight: '600', marginBottom: spacing.sm },
   input: {
     minHeight: 126,
     padding: spacing.lg,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.primary,
   },
   saveButtonDisabled: { backgroundColor: colors.primary, opacity: 0.5 },

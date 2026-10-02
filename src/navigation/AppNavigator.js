@@ -19,7 +19,7 @@ const appTheme = {
     card: colors.surface,
     text: colors.text,
     border: colors.border,
-    notification: colors.accent,
+    notification: colors.primary,
   },
 };
 
@@ -52,7 +52,7 @@ export default function AppNavigator() {
             ...(Platform.OS === 'web' ? { boxShadow: 'none' } : { elevation: 0, shadowOpacity: 0 }),
           },
           tabBarIcon: ({ color, size, focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+            <View style={styles.iconWrap}>
               <MaterialCommunityIcons
                 color={color}
                 name={iconNames[route.name][focused ? 1 : 0]}
@@ -78,5 +78,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapActive: { backgroundColor: colors.primarySoft },
 });

@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 const SUPPORTED_ENVIRONMENTS = ['development', 'staging', 'production'];
 const DEFAULT_TIMEOUT_MS = 10000;
@@ -12,7 +12,19 @@ if (!SUPPORTED_ENVIRONMENTS.includes(environment)) {
 }
 
 const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/$/, '');
-const developmentHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+
+const getMetroHost = () => {
+  if (Platform.OS === 'web') {
+    return typeof window !== 'undefined' ? window.location.hostname : null;
+  }
+
+  const scriptUrl = NativeModules.SourceCode?.scriptURL;
+  const hostMatch = scriptUrl?.match(/^https?:\/\/([^/:]+)/i);
+  return hostMatch?.[1] || null;
+};
+
+const developmentHost =
+  getMetroHost() || (Platform.OS === 'android' ? '10.0.2.2' : 'localhost');
 const fallbackUrl = `http://${developmentHost}:8080/api`;
 
 if (!configuredUrl && environment !== 'development') {

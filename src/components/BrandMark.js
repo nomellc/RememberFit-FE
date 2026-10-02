@@ -19,7 +19,9 @@ export default function BrandMark({ size = 42 }) {
 
 const styles = StyleSheet.create({
   frame: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   backCard: {
@@ -50,6 +52,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: '16%',
     bottom: '13%',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
   },
 });

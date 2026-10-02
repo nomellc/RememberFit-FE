@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surfaceMuted,
     marginBottom: spacing.lg,
   },
   title: {
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     height: 46,
     paddingHorizontal: spacing.xl,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',

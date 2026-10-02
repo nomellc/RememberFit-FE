@@ -25,24 +25,24 @@ const EMPTY_INSIGHTS = {
 const qualityRows = [
   { key: 'againCount', label: '다시', color: colors.danger },
   { key: 'hardCount', label: '어려움', color: colors.warning },
-  { key: 'goodCount', label: '알맞음', color: colors.primary },
+  { key: 'goodCount', label: '알맞음', color: colors.good },
   { key: 'easyCount', label: '쉬움', color: colors.easy },
 ];
 
-function MetricRow({ icon, label, value, caption, color, last }) {
+function MetricRow({ icon, label, value, caption, last }) {
   return (
     <View
       accessible
       accessibilityLabel={`${label} ${value}장. ${caption}`}
       style={[styles.metricRow, !last && styles.metricBorder]}
     >
-      <View style={[styles.metricIcon, { backgroundColor: color.background }]}>
-        <MaterialCommunityIcons name={icon} size={21} color={color.foreground} />
+      <View style={styles.metricIcon}>
+        <MaterialCommunityIcons name={icon} size={21} color={colors.subText} />
       </View>
       <View style={styles.metricCopy}>
         <Text style={styles.metricLabel}>{label}</Text>
       </View>
-      <Text style={[styles.metricValue, { color: color.foreground }]}>{value}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
     </View>
   );
 }
@@ -160,18 +160,13 @@ export default function StatsScreen() {
         ) : (
           <>
             <View style={styles.overviewCard}>
-              <View style={styles.overviewTop}>
-                <View>
-                  <Text style={styles.overviewLabel}>전체 카드</Text>
-                  <View style={styles.totalRow}>
-                    <Text style={styles.totalValue}>{totalCards}</Text>
-                    <Text style={styles.totalUnit}>장</Text>
-                  </View>
+              <View>
+                <Text style={styles.overviewLabel}>전체 카드</Text>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalValue}>{totalCards}</Text>
+                  <Text style={styles.totalUnit}>장</Text>
                 </View>
-                <View style={styles.deckBadge}>
-                  <MaterialCommunityIcons name="notebook-outline" size={17} color={colors.primary} />
-                  <Text style={styles.deckBadgeText}>암기장 {deckCount}개</Text>
-                </View>
+                <Text style={styles.deckMeta}>{deckCount}개의 암기장</Text>
               </View>
 
               <View style={styles.progressCopy}>
@@ -191,8 +186,7 @@ export default function StatsScreen() {
 
             <View style={styles.sectionHeading}>
               <Text accessibilityRole="header" style={styles.sectionTitle}>최근 7일 학습</Text>
-              <View accessible accessibilityLabel={`${insights.streakDays || 0}일 연속 학습`} style={styles.streakBadge}>
-                <MaterialCommunityIcons name="fire" size={16} color={colors.warning} />
+              <View accessible accessibilityLabel={`${insights.streakDays || 0}일 연속 학습`}>
                 <Text style={styles.streakText}>{insights.streakDays || 0}일 연속</Text>
               </View>
             </View>
@@ -241,21 +235,18 @@ export default function StatsScreen() {
             <View style={styles.metricList}>
               <MetricRow
                 caption="아직 학습하지 않은 카드"
-                color={{ background: colors.primarySoft, foreground: colors.primary }}
                 icon="cards-outline"
                 label="새 카드"
                 value={stats.newCount || 0}
               />
               <MetricRow
                 caption="오늘 다시 볼 카드"
-                color={{ background: colors.warningSoft, foreground: colors.warning }}
                 icon="calendar-refresh-outline"
                 label="복습 예정"
                 value={stats.reviewCount || 0}
               />
               <MetricRow
                 caption="3회 이상 기억한 카드"
-                color={{ background: colors.surfaceMuted, foreground: colors.text }}
                 icon="check-circle-outline"
                 label="기억 완료"
                 value={stats.doneCount || 0}
@@ -298,21 +289,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     backgroundColor: colors.primary,
   },
-  overviewTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  overviewLabel: { ...type.body, fontWeight: '700', color: colors.surface },
+  overviewLabel: { ...type.body, color: colors.surface },
   totalRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: spacing.xs },
-  totalValue: { color: colors.surface, fontSize: 42, lineHeight: 50, fontWeight: '700', letterSpacing: -1 },
-  totalUnit: { color: colors.surface, fontSize: 15, fontWeight: '700', marginLeft: spacing.xs },
-  deckBadge: {
-    height: 36,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
-  },
-  deckBadgeText: { color: colors.primaryDark, fontSize: 12, fontWeight: '700' },
+  totalValue: { color: colors.surface, fontSize: 40, lineHeight: 48, fontWeight: '700', letterSpacing: -1 },
+  totalUnit: { color: colors.surface, fontSize: 15, marginLeft: spacing.xs },
+  deckMeta: { ...type.caption, color: colors.surface, marginTop: spacing.xs },
   progressCopy: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.xxl },
   progressLabel: { ...type.caption, color: colors.surface, fontWeight: '700' },
   progressValue: { ...type.caption, color: colors.surface, fontWeight: '800' },
@@ -323,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.13)',
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.accent },
+  progressFill: { height: '100%', borderRadius: radius.pill, backgroundColor: colors.surface },
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -332,19 +313,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: { ...type.section, color: colors.text },
-  streakBadge: {
-    height: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.warningSoft,
-  },
-  streakText: { color: colors.warning, fontSize: 12, fontWeight: '800' },
+  streakText: { color: colors.subText, fontSize: 14, fontWeight: '400' },
   activityCard: {
     padding: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
@@ -363,14 +335,14 @@ const styles = StyleSheet.create({
   chartValue: { height: 18, color: colors.subText, fontSize: 10, fontWeight: '700' },
   chartBar: {
     width: 18,
-    borderRadius: radius.sm,
+    borderRadius: 3,
     backgroundColor: colors.primary,
   },
   chartLabel: { ...type.caption, color: colors.muted, marginTop: spacing.sm, fontSize: 11 },
   distributionCard: {
     gap: spacing.lg,
     padding: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
@@ -378,7 +350,7 @@ const styles = StyleSheet.create({
   distributionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   distributionCopy: { width: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   distributionDot: { width: 10, height: 10, borderRadius: radius.pill },
-  distributionLabel: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  distributionLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
   distributionTrack: {
     flex: 1,
     height: 7,
@@ -389,15 +361,15 @@ const styles = StyleSheet.create({
   distributionFill: { height: '100%', borderRadius: radius.pill },
   distributionValue: {
     width: 30,
-    color: colors.subText,
-    fontSize: 13,
-    fontWeight: '800',
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
     textAlign: 'right',
     fontVariant: ['tabular-nums'],
   },
   metricList: {
     paddingHorizontal: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
@@ -410,8 +382,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
   },
   metricCopy: { flex: 1, paddingHorizontal: spacing.md },
-  metricLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  metricValue: { fontSize: 23, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  metricLabel: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  metricValue: { color: colors.text, fontSize: 23, fontWeight: '700', fontVariant: ['tabular-nums'] },
 });

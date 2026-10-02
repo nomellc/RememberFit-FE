@@ -19,15 +19,15 @@ import { colors, radius, spacing, type } from '../theme/color';
 
 const EMPTY_STATS = { newCount: 0, reviewCount: 0, doneCount: 0 };
 
-function StatItem({ value, label, tone, last }) {
+function StatItem({ value, label, labelColor, last }) {
   return (
     <View
       accessible
       accessibilityLabel={`${label} ${value}장`}
       style={[styles.statItem, !last && styles.statDivider]}
     >
-      <Text style={[styles.statValue, { color: tone }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={[styles.statLabel, { color: labelColor }]}>{label}</Text>
     </View>
   );
 }
@@ -91,7 +91,10 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <View style={styles.intro}>
-          <Text style={styles.date}>{todayLabel}</Text>
+          <View style={styles.dateRow}>
+            <MaterialCommunityIcons name="calendar-month-outline" size={17} color={colors.easy} />
+            <Text style={styles.date}>{todayLabel}</Text>
+          </View>
           <Text accessibilityRole="header" style={styles.title}>
             오늘 할 복습
           </Text>
@@ -112,9 +115,9 @@ export default function HomeScreen({ navigation }) {
           <RequestErrorState error={loadError} onRetry={loadData} compact />
         ) : (
           <View style={styles.statsStrip}>
-            <StatItem value={stats.newCount || 0} label="새 카드" tone={colors.primary} />
-            <StatItem value={reviewCount} label="복습 예정" tone={colors.warning} />
-            <StatItem value={stats.doneCount || 0} label="기억 완료" tone={colors.text} last />
+            <StatItem value={stats.newCount || 0} label="새 카드" labelColor={colors.easyText} />
+            <StatItem value={reviewCount} label="복습 예정" labelColor={colors.warningText} />
+            <StatItem value={stats.doneCount || 0} label="기억 완료" labelColor={colors.goodText} last />
           </View>
         )}
 
@@ -186,7 +189,7 @@ export default function HomeScreen({ navigation }) {
                       </Text>
                       <Text style={styles.deckCount}>{deck.cardCount || 0}장의 카드</Text>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.subText} />
+                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.easyText} />
                   </FeedbackPressable>
                 ))}
               </View>
@@ -211,7 +214,8 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   brandName: { ...type.eyebrow, color: colors.text, letterSpacing: 1.6 },
   intro: { marginTop: spacing.xxxl, marginBottom: spacing.xxl },
-  date: { ...type.body, fontWeight: '600', color: colors.subText, marginBottom: spacing.xs },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+  date: { fontSize: 14, lineHeight: 20, fontWeight: '600', color: colors.text },
   title: { ...type.title, color: colors.text },
   loadingBox: {
     height: 92,
@@ -236,8 +240,8 @@ const styles = StyleSheet.create({
   },
   statItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   statDivider: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
-  statValue: { fontSize: 24, lineHeight: 30, fontWeight: '700', letterSpacing: -0.5 },
-  statLabel: { ...type.caption, color: colors.subText, marginTop: 2 },
+  statValue: { fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5, color: colors.text },
+  statLabel: { fontSize: 14, lineHeight: 20, fontWeight: '600', marginTop: spacing.xs },
   studyCard: {
     minHeight: 98,
     marginTop: spacing.lg,
@@ -253,8 +257,8 @@ const styles = StyleSheet.create({
   arrowButton: {
     width: 44,
     height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -266,7 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: { ...type.section, color: colors.text },
-  allLink: { ...type.caption, color: colors.primary, fontWeight: '700', paddingVertical: spacing.xs },
+  allLink: { fontSize: 14, lineHeight: 20, color: colors.easyText, fontWeight: '700', paddingVertical: spacing.xs },
   allLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.sm, borderRadius: radius.sm },
   deckList: { borderTopWidth: 1, borderTopColor: colors.border },
   deckRow: {
@@ -277,6 +281,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   deckInfo: { flex: 1 },
-  deckTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
-  deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
+  deckTitle: { fontSize: 17, lineHeight: 24, fontWeight: '600', color: colors.text },
+  deckCount: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 3 },
 });

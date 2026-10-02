@@ -44,8 +44,11 @@ describe('공통 상태 컴포넌트', () => {
 describe('학습 화면 색상', () => {
   test('브랜드 녹색은 유지하고 쉬움은 별도의 파란색으로 구분한다', () => {
     expect(colors.primary).toBe('#315C4C');
-    expect(colors.background).toBe('#F4F1E8');
-    expect(colors.easy).toBe('#2858A6');
+    expect(colors.background).toBe('#FFFFFF');
+    expect(colors.danger).toBe('#E5484D');
+    expect(colors.warning).toBe('#F59E0B');
+    expect(colors.good).toBe('#2E7D62');
+    expect(colors.easy).toBe('#3478D4');
   });
 });
 

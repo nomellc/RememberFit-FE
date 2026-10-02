@@ -216,7 +216,7 @@ export default function DeckScreen({ navigation }) {
           </Text>
           <Text style={styles.deckCount}>{item.cardCount || 0}장의 카드</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.subText} />
+        <MaterialCommunityIcons name="chevron-right" size={22} color={colors.easyText} />
       </FeedbackPressable>
       <View style={styles.itemActions}>
         <FeedbackPressable
@@ -361,15 +361,10 @@ const styles = StyleSheet.create({
   },
   listTitle: { ...type.section, color: colors.text },
   listCount: {
-    minWidth: 24,
-    height: 24,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
-    color: colors.text,
-    fontSize: 12,
+    color: colors.subText,
+    fontSize: 14,
     lineHeight: 24,
-    fontWeight: '800',
+    fontWeight: '400',
     textAlign: 'center',
   },
   loader: { paddingVertical: spacing.huge },
@@ -382,7 +377,7 @@ const styles = StyleSheet.create({
   },
   deckMain: { flex: 1, minHeight: 86, flexDirection: 'row', alignItems: 'center' },
   deckCopy: { flex: 1, paddingRight: spacing.md },
-  deckTitle: { fontSize: 16, color: colors.text, fontWeight: '700' },
+  deckTitle: { fontSize: 17, lineHeight: 24, color: colors.text, fontWeight: '600' },
   deckCount: { ...type.caption, color: colors.subText, marginTop: 3 },
   itemActions: { flexDirection: 'row', alignItems: 'center', marginLeft: spacing.xs },
   iconButton: {
