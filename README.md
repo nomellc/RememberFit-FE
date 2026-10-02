@@ -5,7 +5,8 @@
 
 
 ## 프로젝트 소개
-<img width="1920" height="1080" alt="2" src="https://github.com/user-attachments/assets/c7afb7c3-5601-43fc-acc2-44ae9abdd789" />
+<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study" src="https://github.com/user-attachments/assets/a512a478-403d-4859-b7cd-47409a3f75ae" />
+
 <img width="1920" height="1080" alt="4" src="https://github.com/user-attachments/assets/8025f1b9-f87f-4a4c-9fb3-4ab516a3cb52" />
 
 
