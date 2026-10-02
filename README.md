@@ -1,13 +1,17 @@
 
 # *RememberFit*
 
-<img width="1920" height="1080" alt="1" src="https://github.com/user-attachments/assets/e0ae5f57-ba1f-49cb-a2bd-d52a7cbe951f" />
+<img width="1920" height="1080" alt="1" src="https://github.com/user-attachments/assets/e3967983-cbbd-41a7-ada9-24f39719accd" />
+
 
 
 ## 프로젝트 소개
-<img width="1920" height="1080" alt="프레젠테이션 - Smart Flashcard Study" src="https://github.com/user-attachments/assets/a512a478-403d-4859-b7cd-47409a3f75ae" />
+<img width="1920" height="1080" alt="2" src="https://github.com/user-attachments/assets/2f704d99-3523-47ad-954f-52654daeb57f" />
 
-<img width="1920" height="1080" alt="4" src="https://github.com/user-attachments/assets/8025f1b9-f87f-4a4c-9fb3-4ab516a3cb52" />
+<img width="1920" height="1080" alt="4" src="https://github.com/user-attachments/assets/f6c5ec02-3e73-4947-8c87-1a13b6f0c563" />
+
+
+
 
 
 ---
@@ -52,8 +56,7 @@ src/
 ### 1. 홈 화면
 오늘 학습할 새 카드와 복습 카드 수, 기억 완료 현황을 한눈에 확인하고 바로 학습을 시작할 수 있습니다. <br/>
 
-<img width="1920" height="1080" alt="5" src="https://github.com/user-attachments/assets/cde918ca-10bb-4f28-ba8e-3865265b93a8" />
-
+<img width="1920" height="1080" alt="5" src="https://github.com/user-attachments/assets/6828876c-c9ca-41c3-8e74-88feb6e7ec9a" />
 
 
 ---
@@ -61,7 +64,8 @@ src/
 ### 2. 암기장 화면
 학습 주제별로 암기장을 만들고 이름을 수정하거나 삭제할 수 있습니다. 각 암기장에 포함된 카드 수도 함께 표시됩니다. <br/>
 
-<img width="1920" height="1080" alt="6" src="https://github.com/user-attachments/assets/0615866e-f514-49f8-8e8a-be6491042308" />
+<img width="1920" height="1080" alt="6" src="https://github.com/user-attachments/assets/80585c16-c071-4fb9-9046-ec2cbc19a607" />
+
 
 
 ---
@@ -71,7 +75,7 @@ src/
 카드 앞면을 터치하면 뒷면에 정답이 나옵니다. <br/>
 난이도를 선택하면 그 난이도에 따라 다음 학습 날짜가 자동으로 결정됩니다. <br/>
 
-<img width="1920" height="1080" alt="7" src="https://github.com/user-attachments/assets/022ac752-7bbb-40c2-aad8-1e166705d394" />
+<img width="1920" height="1080" alt="7" src="https://github.com/user-attachments/assets/299c96b3-f110-4ef1-b81a-ef9ed0f89061" />
 
 
 ---
@@ -79,8 +83,7 @@ src/
 ### 4. 통계 화면
 누적 학습 횟수, 최근 7일 학습량, 연속 학습일과 평가 분포를 실제 학습 기록을 기준으로 확인할 수 있습니다. <br/>
 
-<img width="1920" height="1080" alt="8" src="https://github.com/user-attachments/assets/5f848d5a-5556-46d6-9dfe-d90bc909e666" />
 
-
+<img width="1920" height="1080" alt="8" src="https://github.com/user-attachments/assets/c26f7675-f13e-41c5-886c-ba02d539b425" />
 
 
