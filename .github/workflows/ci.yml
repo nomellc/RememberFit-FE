@@ -1,0 +1,54 @@
+name: CI
+
+# 앱 스토어 배포 파이프라인은 아직 없다. PR 검사와 main 보호만 한다.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 테스트만 돌리므로 읽기 권한이면 충분하다.
+permissions:
+  contents: read
+
+concurrency:
+  # 같은 브랜치에 새 커밋이 올라오면 진행 중인 실행을 취소해 러너 시간을 아낀다.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node 설치와 의존성 캐시 복원
+        uses: actions/setup-node@v4
+        with:
+          # 저장소에 engines/.nvmrc 가 없어 CI 에서 버전을 고정한다.
+          # 고정하지 않으면 러너 기본값이 바뀔 때 조용히 환경이 달라진다.
+          node-version: '22'
+          cache: npm
+
+      - name: 의존성 설치
+        # install 이 아니라 ci 를 쓴다. package-lock.json 을 그대로 따르므로
+        # 잠금 파일과 package.json 이 어긋나면 여기서 실패한다.
+        run: npm ci
+
+      - name: 테스트
+        # npm test = node --test (tests/*.test.cjs) + jest (tests/*.test.js)
+        run: npm test
+
+      - name: 테스트 결과 업로드
+        # 실패한 실행에서 jest 출력을 받아볼 수 있어야 원인을 찾을 수 있다.
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: |
+            coverage
+            junit.xml
+          retention-days: 14
+          if-no-files-found: ignore

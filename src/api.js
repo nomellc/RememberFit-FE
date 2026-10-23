@@ -1,8 +1,13 @@
 import { API_CONFIG } from './config/environment';
+import { getAccessToken, handleTokenExpired } from './auth/session';
 
 const { ApiError, createApiClient } = require('./api/client');
 
-const { request } = createApiClient(API_CONFIG);
+const { request } = createApiClient({
+  ...API_CONFIG,
+  getAccessToken,
+  onTokenExpired: handleTokenExpired,
+});
 
 const jsonOptions = (method, body) => ({
   method,
@@ -10,7 +15,23 @@ const jsonOptions = (method, body) => ({
   body: JSON.stringify(body),
 });
 
+// 토큰 없이 불러야 하는 입구들이다.
+const publicJsonOptions = (method, body) => ({ ...jsonOptions(method, body), auth: false });
+
 export { ApiError };
+
+export const signup = (email, password, nickname) =>
+  request('/auth/signup', publicJsonOptions('POST', { email, password, nickname }));
+
+export const login = (email, password) =>
+  request('/auth/login', publicJsonOptions('POST', { email, password }));
+
+export const refreshSession = (refreshToken) =>
+  request('/auth/refresh', publicJsonOptions('POST', { refreshToken }));
+
+export const logout = () => request('/auth/logout', { method: 'POST' });
+
+export const getMe = () => request('/auth/me');
 
 export const createDeck = (title) =>
   request('/decks', jsonOptions('POST', { title }));
