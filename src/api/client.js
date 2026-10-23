@@ -53,19 +53,23 @@ const getStatusMessage = (status) => {
   return '요청을 처리하지 못했어요. 다시 시도해주세요.';
 };
 
-const createApiClient = ({ baseUrl, timeoutMs = 10000 }) => {
+const createApiClient = ({ baseUrl, timeoutMs = 10000, getAccessToken, onTokenExpired }) => {
   if (!baseUrl) throw new Error('API baseUrl이 필요합니다.');
 
-  const request = async (path, options = {}) => {
+  const performRequest = async (path, options = {}) => {
+    // auth: false 는 토큰 없이 불러야 하는 입구(로그인, 회원가입, 재발급)에 쓴다.
+    const { auth = true, retried, ...fetchOptions } = options;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const accessToken = auth && getAccessToken ? getAccessToken() : null;
 
     try {
       const response = await fetch(`${baseUrl}${path}`, {
-        ...options,
+        ...fetchOptions,
         headers: {
           Accept: 'application/json',
-          ...options.headers,
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...fetchOptions.headers,
         },
         signal: controller.signal,
       });
@@ -111,6 +115,30 @@ const createApiClient = ({ baseUrl, timeoutMs = 10000 }) => {
       });
     } finally {
       clearTimeout(timeoutId);
+    }
+  };
+
+  /**
+   * 액세스 토큰이 만료된 경우에만 한 번 재발급을 시도하고 같은 요청을 다시 보낸다.
+   * 재발급이 실패하면 원래 오류를 그대로 올려 보내 호출한 쪽이 로그아웃 처리하게 한다.
+   */
+  const request = async (path, options = {}) => {
+    try {
+      return await performRequest(path, options);
+    } catch (error) {
+      const canRetry =
+        error instanceof ApiError &&
+        error.code === 'INVALID_TOKEN' &&
+        options.auth !== false &&
+        !options.retried &&
+        typeof onTokenExpired === 'function';
+
+      if (!canRetry) throw error;
+
+      const refreshed = await onTokenExpired();
+      if (!refreshed) throw error;
+
+      return performRequest(path, { ...options, retried: true });
     }
   };
 
